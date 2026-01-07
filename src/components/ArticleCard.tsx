@@ -30,25 +30,28 @@ export function ArticleCard({ article }: ArticleCardProps) {
   return (
     <Link
       href={`/article/${article.slug}`}
-      className="group block"
+      className="article-card block"
     >
       {/* Image */}
-      <div className="relative aspect-[4/3] overflow-hidden mb-4">
+      <div className="relative aspect-[16/10] overflow-hidden">
         <Image
           src={article.heroImage}
           alt={article.heroAlt}
           fill
-          className="object-cover group-hover:scale-[1.02] transition-transform duration-500"
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          className="object-cover transition-transform duration-500 group-hover:scale-105"
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
         />
+        {/* Category pill overlay */}
+        <div className="absolute top-3 left-3">
+          <span className={`category-pill category-${article.category}`}>
+            {categoryLabels[article.category]}
+          </span>
+        </div>
       </div>
 
       {/* Content */}
-      <div>
-        <p className="text-xs font-ui text-muted uppercase tracking-wider mb-2">
-          {categoryLabels[article.category]}
-        </p>
-        <h3 className="font-display text-xl md:text-2xl font-medium text-gray-900 leading-snug group-hover:text-primary transition-colors">
+      <div className="p-4 md:p-5">
+        <h3 className="font-display text-lg md:text-xl font-medium text-gray-900 leading-snug line-clamp-2">
           {article.title}
         </h3>
       </div>

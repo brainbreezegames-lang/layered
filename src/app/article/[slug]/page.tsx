@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState, use } from "react";
+import Image from "next/image";
+import Link from "next/link";
 import { useLevel } from "@/components/LevelContext";
-import { HeroSection } from "@/components/article/HeroSection";
 import { Sidebar } from "@/components/article/Sidebar";
 import { ArticleContent } from "@/components/article/ArticleContent";
-import { AudioPlayer } from "@/components/article/AudioPlayer";
 import { ExerciseSection } from "@/components/exercises/ExerciseSection";
 import { RelatedArticles } from "@/components/article/RelatedArticles";
 import { mockArticle, mockArticles } from "@/lib/data/mock-articles";
@@ -73,7 +73,7 @@ export default function ArticlePage({
   if (loading) {
     return (
       <div className="min-h-screen bg-cream flex items-center justify-center">
-        <div className="animate-pulse text-gray-400 font-ui">Loading article...</div>
+        <div className="animate-pulse text-muted">Loading article...</div>
       </div>
     );
   }
@@ -87,7 +87,7 @@ export default function ArticlePage({
   if (!displayArticle) {
     return (
       <div className="min-h-screen bg-cream flex items-center justify-center">
-        <div className="text-gray-500 font-ui">Article not found</div>
+        <div className="text-muted">Article not found</div>
       </div>
     );
   }
@@ -113,43 +113,74 @@ export default function ArticlePage({
     : displayArticle.readTime[level];
   const content = displayArticle.content[level];
   const exercises = displayArticle.exercises[level];
-  const audio = displayArticle.audio?.[level];
   const vocabulary = displayArticle.vocabulary || [];
 
   return (
-    <article>
-      {/* Hero */}
-      <HeroSection
-        image={displayArticle.heroImage || "/placeholder.jpg"}
-        alt={displayArticle.heroAlt || displayArticle.title}
-        title={displayArticle.title}
-        subtitle={displayArticle.subtitle || ""}
-      />
+    <article className="min-h-screen bg-cream pb-24 md:pb-12">
+      {/* Back button - Mobile */}
+      <div className="md:hidden sticky top-14 z-30 bg-cream/95 backdrop-blur-sm border-b border-gray-100">
+        <div className="px-4 py-3">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-sm text-muted hover:text-forest transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to News
+          </Link>
+        </div>
+      </div>
+
+      {/* Hero Image - Full width on mobile */}
+      <div className="relative w-full aspect-[16/9] md:aspect-[21/9]">
+        <Image
+          src={displayArticle.heroImage || "/placeholder.jpg"}
+          alt={displayArticle.heroAlt || displayArticle.title}
+          fill
+          className="object-cover"
+          priority
+          sizes="100vw"
+        />
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+
+        {/* Title overlay on image */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 md:p-8 lg:p-12">
+          <div className="max-w-4xl">
+            <h1 className="font-display text-2xl md:text-4xl lg:text-5xl font-medium text-white leading-tight">
+              {displayArticle.title}
+            </h1>
+            {displayArticle.subtitle && (
+              <p className="mt-2 md:mt-3 text-white/80 text-sm md:text-lg max-w-2xl">
+                {displayArticle.subtitle}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Main content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="lg:grid lg:grid-cols-12 lg:gap-12">
-          {/* Sidebar */}
-          <div className="lg:col-span-3 mb-8 lg:mb-0">
-            <Sidebar
-              source={displayArticle.source}
-              sourceUrl={displayArticle.sourceUrl}
-              wordCount={wordCount}
-              readTime={readTime}
-              category={displayArticle.category as Category}
-              tags={[]}
-              articleId={displayArticle.id}
-              level={level}
-            />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
+        <div className="md:grid md:grid-cols-12 md:gap-8 lg:gap-12">
+          {/* Sidebar - Horizontal on mobile, sticky on desktop */}
+          <div className="md:col-span-4 lg:col-span-3 mb-6 md:mb-0">
+            <div className="md:sticky md:top-24">
+              <Sidebar
+                source={displayArticle.source}
+                sourceUrl={displayArticle.sourceUrl}
+                wordCount={wordCount}
+                readTime={readTime}
+                category={displayArticle.category as Category}
+                tags={[]}
+                articleId={displayArticle.id}
+                level={level}
+              />
+            </div>
           </div>
 
           {/* Article content */}
-          <div className="lg:col-span-9">
-            {/* Audio player */}
-            {audio && (
-              <AudioPlayer audioUrl={audio.url} duration={audio.duration} />
-            )}
-
+          <div className="md:col-span-8 lg:col-span-9">
             {/* Article text */}
             <ArticleContent
               content={content}

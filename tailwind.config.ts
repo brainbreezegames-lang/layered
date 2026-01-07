@@ -9,36 +9,46 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        primary: {
-          DEFAULT: "#1a472a",
-          light: "#2d5a3d",
-          dark: "#0f2a19",
+        forest: {
+          DEFAULT: "#1B4332",
+          light: "#2D6A4F",
+          dark: "#081C15",
+        },
+        mint: {
+          DEFAULT: "#95D5B2",
+          light: "#D8F3DC",
         },
         cream: {
-          DEFAULT: "#faf9f7",
-          dark: "#f5f3f0",
+          DEFAULT: "#FFFEF9",
+          warm: "#F5F1EB",
         },
-        muted: "#666666",
-        correct: "#2e7d32",
-        incorrect: "#c62828",
+        coral: "#E07A5F",
+        gold: "#D4A574",
+        // Legacy support
+        primary: {
+          DEFAULT: "#1B4332",
+          light: "#2D6A4F",
+          dark: "#081C15",
+        },
+        muted: "#52524E",
       },
       fontFamily: {
-        display: ["Syne", "sans-serif"],
-        body: ["Syne", "sans-serif"],
-        ui: ["Syne", "sans-serif"],
+        display: ["Fraunces", "Georgia", "serif"],
+        body: ["DM Sans", "sans-serif"],
+        ui: ["DM Sans", "sans-serif"],
+      },
+      borderRadius: {
+        "2xl": "20px",
+        "xl": "12px",
+      },
+      boxShadow: {
+        card: "0 2px 8px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06)",
+        "card-hover": "0 8px 30px rgba(0,0,0,0.12)",
+        float: "0 -4px 20px rgba(0,0,0,0.08)",
       },
       spacing: {
         "18": "4.5rem",
         "22": "5.5rem",
-      },
-      maxWidth: {
-        article: "680px",
-      },
-      lineHeight: {
-        relaxed: "1.75",
-      },
-      letterSpacing: {
-        editorial: "0.12em",
       },
     },
   },

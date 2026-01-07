@@ -111,70 +111,91 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-cream">
-      {/* Page Title */}
-      <section className="py-16 md:py-24">
-        <h1 className="font-display text-4xl md:text-6xl italic text-center text-gray-900">
-          Today&apos;s News
-        </h1>
+      {/* Hero Section */}
+      <section className="pt-8 pb-6 md:pt-12 md:pb-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h1 className="font-display text-3xl md:text-5xl font-medium text-center text-gray-900">
+            Today&apos;s News
+          </h1>
+          <p className="text-center text-muted mt-2 md:mt-3 text-sm md:text-base">
+            Practice English with real-world stories adapted to your level
+          </p>
+        </div>
       </section>
 
-      {/* Category Filter Tabs */}
-      <nav className="border-b border-gray-200 mb-12">
+      {/* Category Filter - Horizontal scroll on mobile */}
+      <nav className="sticky top-14 md:top-16 z-40 bg-cream border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <ul className="flex gap-6 md:gap-10 overflow-x-auto pb-px">
+          <div className="flex gap-1 overflow-x-auto py-3 -mx-4 px-4 scrollbar-hide">
             {categories.map((cat) => (
-              <li key={cat.id}>
-                <button
-                  onClick={() => handleCategoryChange(cat.id)}
-                  className={`category-tab ${
-                    activeCategory === cat.id ? "active" : ""
-                  }`}
-                >
-                  {cat.label}
-                </button>
-              </li>
+              <button
+                key={cat.id}
+                onClick={() => handleCategoryChange(cat.id)}
+                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                  activeCategory === cat.id
+                    ? "bg-forest text-white"
+                    : "bg-cream-warm text-muted hover:bg-gray-200"
+                }`}
+              >
+                {cat.label}
+              </button>
             ))}
-          </ul>
+          </div>
         </div>
       </nav>
 
       {/* Article Grid */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="animate-pulse">
-                <div className="bg-cream-dark aspect-[4/3] mb-4" />
-                <div className="h-3 bg-cream-dark w-1/4 mb-3" />
-                <div className="h-5 bg-cream-dark mb-2" />
-                <div className="h-4 bg-cream-dark w-3/4" />
+              <div key={i} className="article-card animate-pulse">
+                <div className="aspect-[16/10] bg-cream-warm" />
+                <div className="p-4">
+                  <div className="h-5 bg-cream-warm rounded w-3/4 mb-2" />
+                  <div className="h-5 bg-cream-warm rounded w-1/2" />
+                </div>
               </div>
             ))}
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {transformedArticles.map((article) => (
-                <ArticleCard key={article.id} article={article} />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+              {transformedArticles.map((article, index) => (
+                <div
+                  key={article.id}
+                  className="animate-fade-in-up opacity-0"
+                  style={{ animationDelay: `${index * 0.1}s`, animationFillMode: "forwards" }}
+                >
+                  <ArticleCard article={article} />
+                </div>
               ))}
             </div>
 
             {/* Empty State */}
             {transformedArticles.length === 0 && (
               <div className="text-center py-16">
-                <p className="text-muted font-ui">No articles found in this category.</p>
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-cream-warm flex items-center justify-center">
+                  <svg className="w-8 h-8 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                  </svg>
+                </div>
+                <p className="text-muted">No articles found in this category.</p>
               </div>
             )}
 
             {/* Pagination */}
             {displayTotalPages > 1 && (
-              <nav className="flex items-center justify-center gap-6 mt-16">
+              <nav className="flex items-center justify-center gap-2 mt-10">
                 <button
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="text-sm font-ui text-muted hover:text-primary disabled:text-gray-300 disabled:cursor-not-allowed transition-colors"
+                  className="p-2 rounded-full text-muted hover:text-forest hover:bg-cream-warm disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Previous page"
                 >
-                  Previous
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
                 </button>
 
                 <div className="flex items-center gap-1">
@@ -182,10 +203,10 @@ export default function HomePage() {
                     <button
                       key={page}
                       onClick={() => setCurrentPage(page)}
-                      className={`w-8 h-8 text-sm font-ui transition-colors ${
+                      className={`w-10 h-10 rounded-full text-sm font-medium transition-all ${
                         currentPage === page
-                          ? "text-primary"
-                          : "text-muted hover:text-gray-900"
+                          ? "bg-forest text-white"
+                          : "text-muted hover:bg-cream-warm"
                       }`}
                     >
                       {page}
@@ -196,9 +217,12 @@ export default function HomePage() {
                 <button
                   onClick={() => setCurrentPage((p) => Math.min(displayTotalPages, p + 1))}
                   disabled={currentPage === displayTotalPages}
-                  className="text-sm font-ui text-muted hover:text-primary disabled:text-gray-300 disabled:cursor-not-allowed transition-colors"
+                  className="p-2 rounded-full text-muted hover:text-forest hover:bg-cream-warm disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Next page"
                 >
-                  Next
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
                 </button>
               </nav>
             )}
