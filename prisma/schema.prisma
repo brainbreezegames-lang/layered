@@ -1,0 +1,36 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Article {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+
+  title       String
+  subtitle    String?
+  category    String
+  source      String
+  sourceUrl   String   @unique
+  heroImage   String?
+  heroAlt     String?
+
+  content     Json     // { A1: "...", A2: "...", B1: "...", B2: "...", C1: "..." }
+  exercises   Json     // { A1: {...}, A2: {...}, ... }
+  audio       Json?    // { A1: {url, duration}, ... }
+  vocabulary  Json?    // [{ word, definition, level }]
+
+  wordCounts  Json     // { A1: 180, A2: 320, ... }
+  readTimes   Json     // { A1: 1, A2: 2, ... }
+
+  publishedAt DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+  @@index([publishedAt])
+}

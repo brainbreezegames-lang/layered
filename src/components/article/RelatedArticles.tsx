@@ -1,9 +1,19 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Article, Category } from "@/types";
+import { Category } from "@/types";
+
+interface RelatedArticle {
+  id: string;
+  slug: string;
+  title: string;
+  subtitle: string;
+  category: Category;
+  heroImage: string;
+  heroAlt: string;
+}
 
 interface RelatedArticlesProps {
-  articles: Article[];
+  articles: RelatedArticle[];
 }
 
 const categoryLabels: Record<Category, string> = {

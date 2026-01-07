@@ -2,10 +2,20 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Article, Category } from "@/types";
+import { Category } from "@/types";
+
+interface ArticleCardArticle {
+  id: string;
+  slug: string;
+  title: string;
+  category: Category;
+  heroImage: string;
+  heroAlt: string;
+  publishedAt?: string;
+}
 
 interface ArticleCardProps {
-  article: Article;
+  article: ArticleCardArticle;
 }
 
 const categoryLabels: Record<Category, string> = {
@@ -47,7 +57,8 @@ export function ArticleCard({ article }: ArticleCardProps) {
         {/* Meta */}
         <div className="flex items-center justify-between">
           <p className="text-sm font-ui text-gray-500">
-            {categoryLabels[article.category]} · {formatDate(article.publishedAt)}
+            {categoryLabels[article.category]}
+            {article.publishedAt && ` · ${formatDate(article.publishedAt)}`}
           </p>
           <span className="text-gray-400 group-hover:text-primary group-hover:translate-x-1 transition-all">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
