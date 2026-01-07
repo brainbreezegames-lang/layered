@@ -23,8 +23,8 @@ const config: Config = {
         incorrect: "#c62828",
       },
       fontFamily: {
-        display: ["Playfair Display", "Georgia", "serif"],
-        body: ["Lora", "Georgia", "serif"],
+        display: ["Syne", "sans-serif"],
+        body: ["Syne", "sans-serif"],
         ui: ["Syne", "sans-serif"],
       },
       spacing: {

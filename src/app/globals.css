@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -17,7 +17,7 @@ html {
 }
 
 body {
-  font-family: var(--font-body, 'Lora', Georgia, serif);
+  font-family: 'Syne', sans-serif;
   background-color: var(--color-cream);
   color: var(--color-text);
   -webkit-font-smoothing: antialiased;
@@ -27,13 +27,13 @@ body {
 /* Drop cap for first paragraph */
 .article-content > p:first-of-type::first-letter {
   float: left;
-  font-family: 'Playfair Display', serif;
+  font-family: 'Syne', sans-serif;
   font-size: 4.5em;
   line-height: 0.8;
   padding-right: 0.1em;
   padding-top: 0.05em;
   color: var(--color-primary);
-  font-weight: 700;
+  font-weight: 800;
 }
 
 /* Vocabulary highlighting - subtle dotted underline */
@@ -124,7 +124,6 @@ input[type="range"]::-webkit-slider-thumb:hover {
 /* Editorial level selector - subtle text links */
 .level-btn {
   @apply px-2 py-1 text-sm transition-all duration-200;
-  font-family: 'Syne', sans-serif;
   font-weight: 500;
   letter-spacing: 0.02em;
 }
@@ -144,7 +143,6 @@ input[type="range"]::-webkit-slider-thumb:hover {
 /* Category tabs - editorial magazine style */
 .category-tab {
   @apply py-4 text-sm uppercase tracking-widest transition-colors whitespace-nowrap;
-  font-family: 'Syne', sans-serif;
   font-weight: 500;
   letter-spacing: 0.12em;
 }
@@ -163,15 +161,9 @@ input[type="range"]::-webkit-slider-thumb:hover {
   color: var(--color-text);
 }
 
-/* Syne font utility */
-.font-syne {
-  font-family: 'Syne', sans-serif;
-}
-
 /* Editorial text link style */
 .text-link {
   @apply inline-flex items-center gap-2 text-sm transition-colors;
-  font-family: 'Syne', sans-serif;
   color: var(--color-muted);
 }
 
