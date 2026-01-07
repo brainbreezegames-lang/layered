@@ -9,27 +9,28 @@ export async function GET(request: NextRequest) {
 
   const where = category && category !== "all" ? { category } : {};
 
-  const [articles, total] = await Promise.all([
+  const [rawArticles, total] = await Promise.all([
     db.article.findMany({
       where,
       orderBy: { publishedAt: "desc" },
       skip: (page - 1) * limit,
       take: limit,
-      select: {
-        id: true,
-        slug: true,
-        title: true,
-        subtitle: true,
-        category: true,
-        heroImage: true,
-        heroAlt: true,
-        publishedAt: true,
-        wordCounts: true,
-        readTimes: true,
-      },
     }),
     db.article.count({ where }),
   ]);
+
+  const articles = rawArticles.map((a) => ({
+    id: a.id,
+    slug: a.slug,
+    title: a.title,
+    subtitle: a.subtitle,
+    category: a.category,
+    heroImage: a.heroImage,
+    heroAlt: a.heroAlt,
+    publishedAt: a.publishedAt,
+    wordCounts: a.wordCounts,
+    readTimes: a.readTimes,
+  }));
 
   return NextResponse.json({
     articles,
