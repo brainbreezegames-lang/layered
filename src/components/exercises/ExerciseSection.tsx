@@ -13,6 +13,8 @@ interface Props {
 }
 
 export function ExerciseSection({ exercises }: Props) {
+  if (!exercises) return null;
+
   return (
     <section className="mt-16 pt-12 border-t border-gray-200">
       <div className="text-center mb-10">
@@ -25,12 +27,24 @@ export function ExerciseSection({ exercises }: Props) {
       </div>
 
       <div className="space-y-4">
-        <ComprehensionQuestions questions={exercises.comprehension} />
-        <VocabularyMatching exercise={exercises.vocabularyMatching} />
-        <GapFill exercise={exercises.gapFill} />
-        <WordOrder exercise={exercises.wordOrder} />
-        <TrueFalse exercise={exercises.trueFalse} />
-        <DiscussionQuestions questions={exercises.discussion} />
+        {exercises.comprehension && exercises.comprehension.length > 0 && (
+          <ComprehensionQuestions questions={exercises.comprehension} />
+        )}
+        {exercises.vocabularyMatching?.pairs && exercises.vocabularyMatching.pairs.length > 0 && (
+          <VocabularyMatching exercise={exercises.vocabularyMatching} />
+        )}
+        {exercises.gapFill?.blanks && exercises.gapFill.blanks.length > 0 && (
+          <GapFill exercise={exercises.gapFill} />
+        )}
+        {exercises.wordOrder?.sentences && exercises.wordOrder.sentences.length > 0 && (
+          <WordOrder exercise={exercises.wordOrder} />
+        )}
+        {exercises.trueFalse?.statements && exercises.trueFalse.statements.length > 0 && (
+          <TrueFalse exercise={exercises.trueFalse} />
+        )}
+        {exercises.discussion && exercises.discussion.length > 0 && (
+          <DiscussionQuestions questions={exercises.discussion} />
+        )}
       </div>
     </section>
   );
