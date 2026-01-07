@@ -1,0 +1,159 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary: #1a472a;
+  --color-accent: #c9a227;
+  --color-cream: #faf9f7;
+  --color-cream-dark: #f5f3f0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body, 'Lora', Georgia, serif);
+  background-color: var(--color-cream);
+  color: #1a1a1a;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Drop cap for first paragraph */
+.article-content > p:first-of-type::first-letter {
+  float: left;
+  font-family: 'Playfair Display', serif;
+  font-size: 4.5em;
+  line-height: 0.8;
+  padding-right: 0.1em;
+  padding-top: 0.05em;
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+/* Vocabulary highlighting */
+.vocab-word {
+  background: linear-gradient(to bottom, transparent 60%, rgba(201, 162, 39, 0.3) 60%);
+  cursor: help;
+  transition: background 0.2s ease;
+}
+
+.vocab-word:hover {
+  background: linear-gradient(to bottom, transparent 40%, rgba(201, 162, 39, 0.5) 40%);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-cream-dark);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
+}
+
+/* Audio player range styling */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  background: #e0e0e0;
+  height: 4px;
+  border-radius: 2px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  margin-top: -6px;
+  background-color: var(--color-primary);
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  transition: transform 0.1s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: white;
+  }
+
+  .article-content {
+    max-width: 100%;
+  }
+}
+
+/* Exercise answer states */
+.answer-correct {
+  background-color: rgba(46, 125, 50, 0.1);
+  border-color: #2e7d32 !important;
+}
+
+.answer-incorrect {
+  background-color: rgba(198, 40, 40, 0.1);
+  border-color: #c62828 !important;
+}
+
+/* Level badge active states */
+.level-badge {
+  @apply px-3 py-1.5 rounded-md font-mono text-sm font-medium transition-all duration-200 border-2;
+}
+
+.level-badge-a1 {
+  --level-color: #4CAF50;
+}
+.level-badge-a2 {
+  --level-color: #8BC34A;
+}
+.level-badge-b1 {
+  --level-color: #FFC107;
+}
+.level-badge-b2 {
+  --level-color: #FF9800;
+}
+.level-badge-c1 {
+  --level-color: #F44336;
+}
+
+.level-badge.active {
+  background-color: var(--level-color);
+  border-color: var(--level-color);
+  color: white;
+}
+
+.level-badge:not(.active) {
+  background-color: transparent;
+  border-color: var(--level-color);
+  color: var(--level-color);
+}
+
+.level-badge:not(.active):hover {
+  background-color: var(--level-color);
+  color: white;
+}
