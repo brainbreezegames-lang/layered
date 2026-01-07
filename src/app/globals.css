@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,9 +6,10 @@
 
 :root {
   --color-primary: #1a472a;
-  --color-accent: #c9a227;
   --color-cream: #faf9f7;
   --color-cream-dark: #f5f3f0;
+  --color-text: #1a1a1a;
+  --color-muted: #666666;
 }
 
 html {
@@ -18,7 +19,7 @@ html {
 body {
   font-family: var(--font-body, 'Lora', Georgia, serif);
   background-color: var(--color-cream);
-  color: #1a1a1a;
+  color: var(--color-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -35,15 +36,15 @@ body {
   font-weight: 700;
 }
 
-/* Vocabulary highlighting */
+/* Vocabulary highlighting - subtle dotted underline */
 .vocab-word {
-  background: linear-gradient(to bottom, transparent 60%, rgba(201, 162, 39, 0.3) 60%);
+  border-bottom: 1px dotted var(--color-muted);
   cursor: help;
-  transition: background 0.2s ease;
+  transition: border-color 0.2s ease;
 }
 
 .vocab-word:hover {
-  background: linear-gradient(to bottom, transparent 40%, rgba(201, 162, 39, 0.5) 40%);
+  border-bottom-color: var(--color-primary);
 }
 
 /* Custom scrollbar */
@@ -75,17 +76,17 @@ input[type="range"] {
 
 input[type="range"]::-webkit-slider-runnable-track {
   background: #e0e0e0;
-  height: 4px;
+  height: 3px;
   border-radius: 2px;
 }
 
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  margin-top: -6px;
+  margin-top: -5px;
   background-color: var(--color-primary);
-  height: 16px;
-  width: 16px;
+  height: 12px;
+  width: 12px;
   border-radius: 50%;
   transition: transform 0.1s ease;
 }
@@ -111,49 +112,73 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
 /* Exercise answer states */
 .answer-correct {
-  background-color: rgba(46, 125, 50, 0.1);
+  background-color: rgba(46, 125, 50, 0.08);
   border-color: #2e7d32 !important;
 }
 
 .answer-incorrect {
-  background-color: rgba(198, 40, 40, 0.1);
+  background-color: rgba(198, 40, 40, 0.08);
   border-color: #c62828 !important;
 }
 
-/* Level badge active states */
-.level-badge {
-  @apply px-3 py-1.5 rounded-md font-mono text-sm font-medium transition-all duration-200 border-2;
+/* Editorial level selector - subtle text links */
+.level-btn {
+  @apply px-2 py-1 text-sm transition-all duration-200;
+  font-family: 'Syne', sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.02em;
 }
 
-.level-badge-a1 {
-  --level-color: #4CAF50;
-}
-.level-badge-a2 {
-  --level-color: #8BC34A;
-}
-.level-badge-b1 {
-  --level-color: #FFC107;
-}
-.level-badge-b2 {
-  --level-color: #FF9800;
-}
-.level-badge-c1 {
-  --level-color: #F44336;
+.level-btn.active {
+  color: var(--color-primary);
 }
 
-.level-badge.active {
-  background-color: var(--level-color);
-  border-color: var(--level-color);
-  color: white;
+.level-btn:not(.active) {
+  color: var(--color-muted);
 }
 
-.level-badge:not(.active) {
-  background-color: transparent;
-  border-color: var(--level-color);
-  color: var(--level-color);
+.level-btn:not(.active):hover {
+  color: var(--color-text);
 }
 
-.level-badge:not(.active):hover {
-  background-color: var(--level-color);
-  color: white;
+/* Category tabs - editorial magazine style */
+.category-tab {
+  @apply py-4 text-sm uppercase tracking-widest transition-colors whitespace-nowrap;
+  font-family: 'Syne', sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+}
+
+.category-tab.active {
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-primary);
+  margin-bottom: -1px;
+}
+
+.category-tab:not(.active) {
+  color: var(--color-muted);
+}
+
+.category-tab:not(.active):hover {
+  color: var(--color-text);
+}
+
+/* Syne font utility */
+.font-syne {
+  font-family: 'Syne', sans-serif;
+}
+
+/* Editorial text link style */
+.text-link {
+  @apply inline-flex items-center gap-2 text-sm transition-colors;
+  font-family: 'Syne', sans-serif;
+  color: var(--color-muted);
+}
+
+.text-link:hover {
+  color: var(--color-primary);
+}
+
+.text-link svg {
+  @apply w-4 h-4;
 }

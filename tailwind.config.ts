@@ -14,30 +14,18 @@ const config: Config = {
           light: "#2d5a3d",
           dark: "#0f2a19",
         },
-        accent: {
-          DEFAULT: "#c9a227",
-          light: "#d4b44a",
-          dark: "#a6851f",
-        },
-        level: {
-          a1: "#4CAF50",
-          a2: "#8BC34A",
-          b1: "#FFC107",
-          b2: "#FF9800",
-          c1: "#F44336",
-        },
         cream: {
           DEFAULT: "#faf9f7",
           dark: "#f5f3f0",
         },
+        muted: "#666666",
         correct: "#2e7d32",
         incorrect: "#c62828",
       },
       fontFamily: {
         display: ["Playfair Display", "Georgia", "serif"],
         body: ["Lora", "Georgia", "serif"],
-        ui: ["Inter", "Helvetica Neue", "sans-serif"],
-        mono: ["JetBrains Mono", "monospace"],
+        ui: ["Syne", "sans-serif"],
       },
       spacing: {
         "18": "4.5rem",
@@ -48,6 +36,9 @@ const config: Config = {
       },
       lineHeight: {
         relaxed: "1.75",
+      },
+      letterSpacing: {
+        editorial: "0.12em",
       },
     },
   },

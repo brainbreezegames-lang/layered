@@ -9,18 +9,19 @@ export function LevelSelector() {
   const { level, setLevel } = useLevel();
 
   return (
-    <div className="flex items-center gap-1">
-      {levels.map((l) => (
+    <div className="flex items-center">
+      {levels.map((l, i) => (
         <button
           key={l}
           onClick={() => setLevel(l)}
-          className={`level-badge level-badge-${l.toLowerCase()} ${
-            level === l ? "active" : ""
-          }`}
+          className={`level-btn ${level === l ? "active" : ""}`}
           aria-pressed={level === l}
           aria-label={`Set reading level to ${l}`}
         >
           {l}
+          {i < levels.length - 1 && (
+            <span className="text-gray-300 ml-1.5">/</span>
+          )}
         </button>
       ))}
     </div>
@@ -34,12 +35,12 @@ export function LevelSelectorMobile() {
     <select
       value={level}
       onChange={(e) => setLevel(e.target.value as Level)}
-      className="px-3 py-2 rounded-lg border-2 border-primary bg-transparent font-mono text-sm font-medium text-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+      className="px-3 py-2 bg-transparent font-ui text-sm text-muted focus:outline-none focus:text-primary border-b border-gray-300"
       aria-label="Select reading level"
     >
       {levels.map((l) => (
         <option key={l} value={l}>
-          {l}
+          Level {l}
         </option>
       ))}
     </select>

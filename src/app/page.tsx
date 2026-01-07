@@ -57,7 +57,6 @@ export default function HomePage() {
         const data: ApiResponse = await res.json();
 
         if (data.articles.length === 0 && currentPage === 1) {
-          // No articles in DB, fallback to mock
           setUseMock(true);
         } else {
           setArticles(data.articles);
@@ -65,7 +64,6 @@ export default function HomePage() {
           setUseMock(false);
         }
       } catch {
-        // Fallback to mock data on error
         setUseMock(true);
       } finally {
         setLoading(false);
@@ -114,8 +112,8 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-cream">
       {/* Page Title */}
-      <section className="py-20 md:py-28">
-        <h1 className="font-display text-5xl md:text-7xl italic text-center text-gray-900">
+      <section className="py-16 md:py-24">
+        <h1 className="font-display text-4xl md:text-6xl italic text-center text-gray-900">
           Today&apos;s News
         </h1>
       </section>
@@ -123,15 +121,13 @@ export default function HomePage() {
       {/* Category Filter Tabs */}
       <nav className="border-b border-gray-200 mb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <ul className="flex gap-8 overflow-x-auto pb-px">
+          <ul className="flex gap-6 md:gap-10 overflow-x-auto pb-px">
             {categories.map((cat) => (
               <li key={cat.id}>
                 <button
                   onClick={() => handleCategoryChange(cat.id)}
-                  className={`py-4 text-sm font-ui uppercase tracking-wider transition-colors whitespace-nowrap ${
-                    activeCategory === cat.id
-                      ? "text-primary border-b-2 border-primary -mb-px"
-                      : "text-gray-500 hover:text-gray-900"
+                  className={`category-tab ${
+                    activeCategory === cat.id ? "active" : ""
                   }`}
                 >
                   {cat.label}
@@ -148,10 +144,10 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[...Array(6)].map((_, i) => (
               <div key={i} className="animate-pulse">
-                <div className="bg-gray-200 aspect-[4/3] rounded-lg mb-4" />
-                <div className="h-4 bg-gray-200 rounded w-1/4 mb-3" />
-                <div className="h-6 bg-gray-200 rounded mb-2" />
-                <div className="h-4 bg-gray-200 rounded w-3/4" />
+                <div className="bg-cream-dark aspect-[4/3] mb-4" />
+                <div className="h-3 bg-cream-dark w-1/4 mb-3" />
+                <div className="h-5 bg-cream-dark mb-2" />
+                <div className="h-4 bg-cream-dark w-3/4" />
               </div>
             ))}
           </div>
@@ -166,30 +162,30 @@ export default function HomePage() {
             {/* Empty State */}
             {transformedArticles.length === 0 && (
               <div className="text-center py-16">
-                <p className="text-gray-500 font-ui">No articles found in this category.</p>
+                <p className="text-muted font-ui">No articles found in this category.</p>
               </div>
             )}
 
             {/* Pagination */}
             {displayTotalPages > 1 && (
-              <nav className="flex items-center justify-center gap-4 mt-16">
+              <nav className="flex items-center justify-center gap-6 mt-16">
                 <button
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="text-sm font-ui text-gray-600 hover:text-primary disabled:text-gray-300 disabled:cursor-not-allowed transition-colors"
+                  className="text-sm font-ui text-muted hover:text-primary disabled:text-gray-300 disabled:cursor-not-allowed transition-colors"
                 >
                   Previous
                 </button>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
                   {Array.from({ length: displayTotalPages }, (_, i) => i + 1).map((page) => (
                     <button
                       key={page}
                       onClick={() => setCurrentPage(page)}
-                      className={`w-8 h-8 rounded-full text-sm font-ui transition-colors ${
+                      className={`w-8 h-8 text-sm font-ui transition-colors ${
                         currentPage === page
-                          ? "bg-primary text-white"
-                          : "text-gray-600 hover:bg-gray-100"
+                          ? "text-primary"
+                          : "text-muted hover:text-gray-900"
                       }`}
                     >
                       {page}
@@ -200,7 +196,7 @@ export default function HomePage() {
                 <button
                   onClick={() => setCurrentPage((p) => Math.min(displayTotalPages, p + 1))}
                   disabled={currentPage === displayTotalPages}
-                  className="text-sm font-ui text-gray-600 hover:text-primary disabled:text-gray-300 disabled:cursor-not-allowed transition-colors"
+                  className="text-sm font-ui text-muted hover:text-primary disabled:text-gray-300 disabled:cursor-not-allowed transition-colors"
                 >
                   Next
                 </button>

@@ -14,7 +14,7 @@ interface SidebarProps {
 }
 
 const categoryLabels: Record<Category, string> = {
-  world: "World News",
+  world: "World",
   culture: "Culture",
   science: "Science",
   sports: "Sports",
@@ -42,56 +42,109 @@ export function Sidebar({
     <aside className="lg:sticky lg:top-24 space-y-6">
       {/* Source info */}
       <div className="pb-6 border-b border-gray-200">
-        <p className="text-sm text-gray-500 font-ui mb-1">Adapted by</p>
-        <p className="font-ui font-semibold text-primary">LAYERED EDITORS</p>
-        <p className="text-sm text-gray-500 font-ui mt-3 mb-1">Original source</p>
-        <p className="font-ui text-gray-700">{source}</p>
+        <p className="text-xs text-muted font-ui uppercase tracking-wider mb-1">
+          Adapted by
+        </p>
+        <p className="font-ui text-sm text-gray-900">Layered Editors</p>
+        <p className="text-xs text-muted font-ui uppercase tracking-wider mt-4 mb-1">
+          Original source
+        </p>
+        <p className="font-ui text-sm text-gray-900">{source}</p>
       </div>
 
       {/* Stats */}
       <div className="pb-6 border-b border-gray-200">
-        <p className="font-ui text-gray-600">
-          <span className="font-semibold">{wordCount}</span> words · {readTime} min read
+        <p className="font-ui text-sm text-muted">
+          {wordCount} words · {readTime} min read
         </p>
       </div>
 
       {/* Category & Tags */}
       <div className="pb-6 border-b border-gray-200">
-        <p className="font-ui font-semibold text-primary mb-2">
+        <p className="text-xs text-muted font-ui uppercase tracking-wider mb-2">
           {categoryLabels[category]}
         </p>
-        <div className="flex flex-wrap gap-2">
-          {tags.map((tag) => (
-            <span
-              key={tag}
-              className="px-2 py-1 bg-cream-dark text-gray-600 text-xs font-ui rounded-full"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
+        {tags.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-3">
+            {tags.map((tag) => (
+              <span
+                key={tag}
+                className="text-xs font-ui text-muted lowercase"
+              >
+                {tag}
+                {tags.indexOf(tag) < tags.length - 1 && ","}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Actions */}
-      <div className="space-y-3">
+      {/* Actions - Editorial text links */}
+      <div className="space-y-4">
         <button
           onClick={handleDownload}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white font-ui font-medium rounded-lg hover:bg-primary-light transition-colors"
+          className="text-link group"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+            />
           </svg>
-          Download Exercises
+          <span>Download exercises</span>
+          <svg
+            className="w-3 h-3 transition-transform group-hover:translate-x-0.5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
         </button>
 
         <button
           onClick={handlePrint}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-primary text-primary font-ui font-medium rounded-lg hover:bg-primary hover:text-white transition-colors no-print"
+          className="text-link group no-print"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+            />
           </svg>
-          Print This Lesson
+          <span>Print this lesson</span>
+          <svg
+            className="w-3 h-3 transition-transform group-hover:translate-x-0.5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
         </button>
       </div>
     </aside>
