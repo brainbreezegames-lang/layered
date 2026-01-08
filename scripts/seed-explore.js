@@ -20,7 +20,7 @@ const sampleArticles = [
     wikiTitle: 'Albert Einstein',
     title: 'Albert Einstein',
     category: 'people',
-    heroImage: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Einstein_1921_by_F_Schmutzer_-_restoration.jpg/800px-Einstein_1921_by_F_Schmutzer_-_restoration.jpg',
+    heroImage: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=1200',
     excerpt: 'A famous scientist who changed how we understand space, time, and energy.',
     content: {
       A1: 'Albert Einstein was a scientist. He was born in Germany in 1879. He moved to America. He had white hair. He was very smart. He won a big prize for science.',
