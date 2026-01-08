@@ -111,19 +111,19 @@ OUTPUT (${level} LEVEL):`;
 export async function generateAllLevels(originalText: string): Promise<Record<Level, string>> {
   const levels: Level[] = ["A1", "A2", "B1", "B2", "C1"];
 
-  // Generate sequentially with delays to avoid rate limiting
-  console.log("Generating all level versions sequentially...");
+  // Generate all levels in parallel for speed
+  console.log("Generating all level versions in parallel...");
+  const results = await Promise.all(
+    levels.map(async (level) => {
+      const text = await generateLevelVersion(originalText, level);
+      console.log(`✓ ${level} version done`);
+      return { level, text };
+    })
+  );
+
   const versions: Record<Level, string> = {} as Record<Level, string>;
-
-  for (const level of levels) {
-    const text = await generateLevelVersion(originalText, level);
-    console.log(`✓ ${level} version done`);
+  for (const { level, text } of results) {
     versions[level] = text;
-
-    // Add 2 second delay between requests to avoid rate limiting
-    if (level !== "C1") {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-    }
   }
 
   return versions;
@@ -282,21 +282,22 @@ IMPORTANT: Return ONLY valid JSON, no other text. Make exercises appropriate for
 }
 
 export async function generateAllExercises(levelVersions: Record<Level, string>): Promise<Record<Level, unknown>> {
-  // Generate sequentially with delays to avoid rate limiting
-  console.log("Generating all exercises sequentially...");
-  const exercises: Record<Level, unknown> = {} as Record<Level, unknown>;
+  // Generate all exercises in parallel for speed
+  console.log("Generating all exercises in parallel...");
   const levels: Level[] = ["A1", "A2", "B1", "B2", "C1"];
 
-  for (const level of levels) {
-    const text = levelVersions[level];
-    const ex = await generateExercises(text, level);
-    console.log(`✓ ${level} exercises done`);
-    exercises[level] = ex;
+  const results = await Promise.all(
+    levels.map(async (level) => {
+      const text = levelVersions[level];
+      const ex = await generateExercises(text, level);
+      console.log(`✓ ${level} exercises done`);
+      return { level, ex };
+    })
+  );
 
-    // Add 2 second delay between requests to avoid rate limiting
-    if (level !== "C1") {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-    }
+  const exercises: Record<Level, unknown> = {} as Record<Level, unknown>;
+  for (const { level, ex } of results) {
+    exercises[level] = ex;
   }
 
   return exercises;
