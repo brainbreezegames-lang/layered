@@ -78,24 +78,37 @@ export default function HomePage() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    setRefreshStatus("Fetching and generating articles with AI... (this may take 2-3 minutes)");
     try {
-      const res = await fetch("/api/fetch-articles", { method: "POST" });
-      const data = await res.json();
-      if (data.success) {
-        if (data.processed > 0) {
-          setRefreshStatus(`Added ${data.processed} new articles!`);
-          // Re-fetch articles after refresh
-          setTimeout(() => {
-            setCurrentPage(1);
-            setActiveCategory("all");
-            window.location.reload();
-          }, 2000);
-        } else {
-          setRefreshStatus(data.message || "No new articles to add");
-        }
+      // Step 1: Fetch articles (fast - just RSS)
+      setRefreshStatus("Fetching news articles...");
+      const fetchRes = await fetch("/api/fetch-articles", { method: "POST" });
+      const fetchData = await fetchRes.json();
+
+      if (!fetchData.success) {
+        setRefreshStatus(fetchData.message || "Fetch failed");
+        return;
+      }
+
+      if (fetchData.processed === 0) {
+        setRefreshStatus(fetchData.message || "No new articles found");
+        return;
+      }
+
+      // Step 2: Process with AI (slow)
+      setRefreshStatus(`Fetched ${fetchData.processed} articles. Generating AI content... (2-3 min)`);
+      const processRes = await fetch("/api/process-articles", { method: "POST" });
+      const processData = await processRes.json();
+
+      if (processData.success && processData.processed > 0) {
+        setRefreshStatus(`Done! Added ${processData.processed} articles with AI content.`);
+        setTimeout(() => {
+          setCurrentPage(1);
+          setActiveCategory("all");
+          window.location.reload();
+        }, 2000);
       } else {
-        setRefreshStatus(data.message || "Refresh failed - please try again");
+        setRefreshStatus(processData.message || "AI processing completed");
+        setTimeout(() => window.location.reload(), 2000);
       }
     } catch (error) {
       console.error("Refresh error:", error);

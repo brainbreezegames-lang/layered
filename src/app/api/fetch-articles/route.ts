@@ -1,10 +1,18 @@
 import { NextResponse } from "next/server";
-import { fetchAllNews } from "@/lib/pipeline/fetch-news";
-import { processArticle } from "@/lib/pipeline/process-article";
+import { fetchAllNews, getFullArticle } from "@/lib/pipeline/fetch-news";
+import { getArticleImage } from "@/lib/pipeline/image-search";
 import { db } from "@/lib/db";
 
-// Allow up to 5 minutes for processing
-export const maxDuration = 300;
+// Fast endpoint - just fetches and saves raw articles (no AI)
+export const maxDuration = 60;
+
+function generateSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 60);
+}
 
 export async function POST() {
   const results: { title: string; status: "success" | "error" | "skipped"; message?: string }[] = [];
@@ -31,7 +39,7 @@ export async function POST() {
 
     // 3. Filter to only new articles
     const newArticles = allNews.filter((item) => !existingUrls.has(item.link));
-    console.log(`Found ${newArticles.length} new articles to process`);
+    console.log(`Found ${newArticles.length} new articles to fetch`);
 
     if (newArticles.length === 0) {
       return NextResponse.json({
@@ -42,32 +50,70 @@ export async function POST() {
       });
     }
 
-    // 4. Process up to 6 articles
+    // 4. Fetch and save up to 6 articles (raw, no AI)
     const toProcess = newArticles.slice(0, 6);
     let successCount = 0;
 
     for (const newsItem of toProcess) {
       try {
-        console.log(`\n📰 Processing: ${newsItem.title}`);
-        const result = await processArticle(newsItem);
+        console.log(`\n📰 Fetching: ${newsItem.title}`);
 
-        if (result) {
-          results.push({
-            title: newsItem.title,
-            status: "success",
-          });
-          successCount++;
-          console.log(`✅ Success: ${newsItem.title}`);
-        } else {
+        // Get full article text
+        const fullArticle = await getFullArticle(newsItem.link);
+        if (!fullArticle) {
           results.push({
             title: newsItem.title,
             status: "skipped",
-            message: "Article too short or extraction failed",
+            message: "Failed to extract article",
           });
-          console.log(`⏭️ Skipped: ${newsItem.title}`);
+          continue;
         }
+
+        if (fullArticle.textContent.length < 300) {
+          results.push({
+            title: newsItem.title,
+            status: "skipped",
+            message: "Article too short",
+          });
+          continue;
+        }
+
+        // Get image
+        const heroImage = await getArticleImage(newsItem.title, newsItem.category);
+
+        // Calculate word count for raw content
+        const wordCount = fullArticle.textContent.split(/\s+/).length;
+        const readTime = Math.ceil(wordCount / 200);
+
+        // Save raw article (no AI processing yet)
+        // content.raw holds the original, content.A1-C1 will be filled by process-articles
+        await db.article.create({
+          data: {
+            slug: generateSlug(newsItem.title),
+            title: newsItem.title,
+            subtitle: newsItem.description,
+            category: newsItem.category,
+            source: newsItem.source,
+            sourceUrl: newsItem.link,
+            heroImage: heroImage,
+            heroAlt: newsItem.title,
+            content: { raw: fullArticle.textContent },
+            exercises: {},
+            vocabulary: [],
+            wordCounts: { raw: wordCount },
+            readTimes: { raw: readTime },
+            publishedAt: new Date(),
+          },
+        });
+
+        results.push({
+          title: newsItem.title,
+          status: "success",
+        });
+        successCount++;
+        console.log(`✅ Saved raw: ${newsItem.title}`);
       } catch (error) {
-        console.error(`❌ Error processing ${newsItem.title}:`, error);
+        console.error(`❌ Error fetching ${newsItem.title}:`, error);
         results.push({
           title: newsItem.title,
           status: "error",
@@ -78,7 +124,7 @@ export async function POST() {
 
     return NextResponse.json({
       success: true,
-      message: `Processed ${successCount} of ${toProcess.length} articles`,
+      message: `Fetched ${successCount} articles. Now processing with AI...`,
       processed: successCount,
       results,
     });

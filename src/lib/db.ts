@@ -145,6 +145,9 @@ export const db = {
         heroImage: string;
         heroAlt: string;
         content: Record<string, string>;
+        exercises: Record<string, unknown>;
+        wordCounts: Record<string, number>;
+        readTimes: Record<string, number>;
         titles: Record<string, string>;
         subtitles: Record<string, string>;
       }>;
