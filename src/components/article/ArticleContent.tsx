@@ -17,11 +17,17 @@ export function ArticleContent({ content, vocabulary }: ArticleContentProps) {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [followAlong, setFollowAlong] = useState(true);
+  const [seekToTime, setSeekToTime] = useState<number | undefined>(undefined);
   const { level } = useLevel();
 
-  // Create a map of vocabulary words for quick lookup
+  // Create a map and set of vocabulary words
   const vocabMap = useMemo(
     () => new Map(vocabulary.map((v) => [v.word.toLowerCase(), v])),
+    [vocabulary]
+  );
+
+  const vocabWords = useMemo(
+    () => new Set(vocabulary.map((v) => v.word.toLowerCase())),
     [vocabulary]
   );
 
@@ -34,9 +40,13 @@ export function ArticleContent({ content, vocabulary }: ArticleContentProps) {
   // Handle play state changes
   const handlePlayStateChange = useCallback((playing: boolean) => {
     setIsPlaying(playing);
-    if (!playing) {
-      setCurrentTime(0);
-    }
+  }, []);
+
+  // Handle word click for seeking
+  const handleWordSeek = useCallback((wordIndex: number, estimatedTime: number) => {
+    setSeekToTime(estimatedTime);
+    // Clear the seek after a short delay to allow re-seeking to same position
+    setTimeout(() => setSeekToTime(undefined), 100);
   }, []);
 
   // Close tooltip when clicking outside
@@ -54,50 +64,55 @@ export function ArticleContent({ content, vocabulary }: ArticleContentProps) {
     }
   }, [activeWord]);
 
-  const handleWordClick = useCallback((vocabItem: VocabularyItem, e: React.MouseEvent) => {
+  const handleVocabClick = useCallback((vocabItem: VocabularyItem, e: React.MouseEvent) => {
     e.stopPropagation();
     setActiveWord((prev) => (prev?.word === vocabItem.word ? null : vocabItem));
   }, []);
 
   // Render word with vocabulary highlighting AND sync highlighting
   const renderWord = useCallback(
-    (word: string, isActive: boolean, isPast: boolean) => {
+    (word: string, isActive: boolean, isPast: boolean, onSeekClick?: () => void) => {
       const cleanWord = word.toLowerCase().replace(/[.,!?;:'"]/g, "");
       const vocabItem = vocabMap.get(cleanWord);
       const isVocabActive = activeWord?.word.toLowerCase() === cleanWord;
 
-      // Build class names
-      const classes = [
-        "transition-all duration-150",
+      // Build class names for synced highlighting
+      const syncClasses = [
+        "synced-word",
         isActive && followAlong ? "synced-word-active" : "",
         isPast && followAlong ? "synced-word-past" : "",
-        vocabItem ? "vocab-highlight" : "",
-        isVocabActive ? "active" : "",
-      ]
-        .filter(Boolean)
-        .join(" ");
+      ].filter(Boolean).join(" ");
 
       if (vocabItem) {
+        // Vocabulary word - show definition on click, don't seek
         return (
           <span
-            className={classes}
-            onClick={(e) => handleWordClick(vocabItem, e)}
+            className={`vocab-highlight ${isVocabActive ? "active" : ""} ${syncClasses}`}
+            onClick={(e) => handleVocabClick(vocabItem, e)}
           >
             {word}
           </span>
         );
       }
 
-      return <span className={classes}>{word}</span>;
+      // Regular word - can click to seek
+      return (
+        <span
+          className={`${syncClasses} ${onSeekClick ? "synced-word-clickable" : ""}`}
+          onClick={onSeekClick}
+        >
+          {word}
+        </span>
+      );
     },
-    [vocabMap, activeWord, followAlong, handleWordClick]
+    [vocabMap, activeWord, followAlong, handleVocabClick]
   );
 
   // Split content into paragraphs for non-synced rendering
   const paragraphs = content.split("\n\n").filter((p) => p.trim());
 
   // Track which words have been highlighted for vocabulary (first occurrence only)
-  const highlightVocabulary = (text: string) => {
+  const highlightVocabulary = useCallback((text: string) => {
     const highlightedWords = new Set<string>();
     const words = text.split(/(\s+)/);
 
@@ -113,7 +128,7 @@ export function ArticleContent({ content, vocabulary }: ArticleContentProps) {
           <span
             key={index}
             className={`vocab-highlight ${isActive ? "active" : ""}`}
-            onClick={(e) => handleWordClick(vocabItem, e)}
+            onClick={(e) => handleVocabClick(vocabItem, e)}
           >
             {word}
           </span>
@@ -122,7 +137,7 @@ export function ArticleContent({ content, vocabulary }: ArticleContentProps) {
 
       return <span key={index}>{word}</span>;
     });
-  };
+  }, [vocabMap, activeWord, handleVocabClick]);
 
   return (
     <div className="article-content">
@@ -133,17 +148,18 @@ export function ArticleContent({ content, vocabulary }: ArticleContentProps) {
         </p>
       )}
 
-      {/* Audio Player - Above content for all devices */}
+      {/* Audio Player */}
       <div className="mb-6">
         <TTSPlayer
           text={content}
           level={level}
           onTimeUpdate={handleTimeUpdate}
           onPlayStateChange={handlePlayStateChange}
+          seekToTime={seekToTime}
         />
       </div>
 
-      {/* Follow along toggle - only show when audio is available */}
+      {/* Follow along toggle - show after audio loads */}
       {duration > 0 && (
         <div className="mb-6 flex items-center gap-3">
           <button
@@ -176,22 +192,24 @@ export function ArticleContent({ content, vocabulary }: ArticleContentProps) {
           </button>
           {isPlaying && followAlong && (
             <span className="text-xs text-[var(--color-text-muted)]">
-              Words highlight as they&apos;re spoken
+              Tap any word to jump there
             </span>
           )}
         </div>
       )}
 
-      {/* Article text - Synced or Regular based on playback state */}
+      {/* Article text - Synced when playing, regular when not */}
       <div className={`reading-mode ${isPlaying && followAlong ? "active" : ""}`}>
-        {isPlaying && followAlong && duration > 0 ? (
+        {duration > 0 ? (
           <SyncedTextReader
             content={content}
             currentTime={currentTime}
             duration={duration}
-            isPlaying={isPlaying}
+            isPlaying={isPlaying && followAlong}
             className="font-body"
             renderWord={renderWord}
+            onWordClick={handleWordSeek}
+            vocabWords={vocabWords}
           />
         ) : (
           <div className="font-body">
@@ -204,7 +222,7 @@ export function ArticleContent({ content, vocabulary }: ArticleContentProps) {
         )}
       </div>
 
-      {/* Vocabulary Tooltip - Fixed position for mobile */}
+      {/* Vocabulary Tooltip */}
       {activeWord && (
         <div className="vocab-tooltip">
           <button

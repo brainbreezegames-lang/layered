@@ -40,6 +40,7 @@ export default function StoryPage({ params }: { params: Promise<{ slug: string }
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [followAlong, setFollowAlong] = useState(true);
+  const [seekToTime, setSeekToTime] = useState<number | undefined>(undefined);
 
   useEffect(() => {
     async function fetchStory() {
@@ -77,10 +78,19 @@ export default function StoryPage({ params }: { params: Promise<{ slug: string }
   // Handle play state changes
   const handlePlayStateChange = useCallback((playing: boolean) => {
     setIsPlaying(playing);
-    if (!playing) {
-      setCurrentTime(0);
-    }
   }, []);
+
+  // Handle word click for seeking
+  const handleWordSeek = useCallback((wordIndex: number, estimatedTime: number) => {
+    setSeekToTime(estimatedTime);
+    setTimeout(() => setSeekToTime(undefined), 100);
+  }, []);
+
+  // Create a set of vocab words for SyncedTextReader
+  const vocabWords = useMemo(() => {
+    const vocab = getVocabularyForLevel();
+    return new Set(vocab.map(v => v.word.toLowerCase()));
+  }, [getVocabularyForLevel]);
 
   const highlightVocabulary = useCallback((text: string, vocab: { word: string; definition: string; level: string }[]) => {
     if (!vocab || vocab.length === 0) return text;

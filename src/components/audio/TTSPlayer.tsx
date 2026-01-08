@@ -9,6 +9,8 @@ interface TTSPlayerProps {
   className?: string;
   onTimeUpdate?: (currentTime: number, duration: number) => void;
   onPlayStateChange?: (isPlaying: boolean) => void;
+  onSeekRequest?: (seekTo: number) => void;
+  seekToTime?: number; // External seek request (from word click)
 }
 
 // Narrators with personalities
@@ -59,7 +61,17 @@ const SPEEDS = [
 ];
 
 const TTS_API = "/api/tts";
-const MAX_CHUNK_SIZE = 280; // Leave some buffer for the 300 char API limit
+const MAX_CHUNK_SIZE = 280;
+
+interface ChunkData {
+  text: string;
+  startTime: number;
+  endTime: number;
+  audioUrl: string | null;
+  duration: number;
+  wordStartIndex: number;
+  wordEndIndex: number;
+}
 
 // Split text into chunks at sentence boundaries
 function splitTextIntoChunks(text: string): string[] {
@@ -68,17 +80,14 @@ function splitTextIntoChunks(text: string): string[] {
   let currentChunk = "";
 
   for (const sentence of sentences) {
-    // If a single sentence is too long, split it further
     if (sentence.length > MAX_CHUNK_SIZE) {
       if (currentChunk) {
         chunks.push(currentChunk.trim());
         currentChunk = "";
       }
-      // Split long sentence by commas or at word boundaries
       const parts = sentence.split(/(?<=,)\s+|(?<=;)\s+/);
       for (const part of parts) {
         if (part.length > MAX_CHUNK_SIZE) {
-          // Last resort: split at word boundaries
           const words = part.split(/\s+/);
           let wordChunk = "";
           for (const word of words) {
@@ -109,22 +118,38 @@ function splitTextIntoChunks(text: string): string[] {
   return chunks.filter(c => c.length > 0);
 }
 
-export function TTSPlayer({ text, level = "B1", className = "", onTimeUpdate, onPlayStateChange }: TTSPlayerProps) {
+// Count words in text
+function countWords(text: string): number {
+  return text.split(/\s+/).filter(w => w.length > 0).length;
+}
+
+export function TTSPlayer({
+  text,
+  level = "B1",
+  className = "",
+  onTimeUpdate,
+  onPlayStateChange,
+  seekToTime
+}: TTSPlayerProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [selectedNarrator, setSelectedNarrator] = useState(NARRATORS[0]);
   const [speed, setSpeed] = useState(1);
-  const [progress, setProgress] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [totalDuration, setTotalDuration] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [currentChunkIndex, setCurrentChunkIndex] = useState(0);
   const [loadingText, setLoadingText] = useState("Loading...");
+  const [isPreloading, setIsPreloading] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const chunksRef = useRef<string[]>([]);
-  const totalChunksRef = useRef(0);
+  const chunksRef = useRef<ChunkData[]>([]);
+  const currentChunkIndexRef = useRef(0);
   const isStoppedRef = useRef(false);
   const audioUrlsRef = useRef<string[]>([]);
+  const pausedTimeRef = useRef(0);
+  const totalWordsRef = useRef(0);
 
   // Clean up on unmount
   useEffect(() => {
@@ -134,30 +159,32 @@ export function TTSPlayer({ text, level = "B1", className = "", onTimeUpdate, on
         audioRef.current.pause();
         audioRef.current = null;
       }
-      // Clean up all audio URLs
       audioUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
       audioUrlsRef.current = [];
     };
   }, []);
 
-  // Estimate total duration based on text length (rough estimate: ~150 words per minute)
-  const estimatedDuration = Math.ceil((text.split(/\s+/).length / 150) * 60);
-
   // Notify parent of play state changes
   useEffect(() => {
-    onPlayStateChange?.(isPlaying);
-  }, [isPlaying, onPlayStateChange]);
+    onPlayStateChange?.(isPlaying && !isPaused);
+  }, [isPlaying, isPaused, onPlayStateChange]);
 
-  // Notify parent of time updates - call immediately and on progress change
+  // Notify parent of time updates
   useEffect(() => {
-    if (onTimeUpdate) {
-      const currentTime = (progress / 100) * estimatedDuration;
-      onTimeUpdate(currentTime, estimatedDuration);
+    if (onTimeUpdate && totalDuration > 0) {
+      onTimeUpdate(currentTime, totalDuration);
     }
-  }, [progress, onTimeUpdate, estimatedDuration]);
+  }, [currentTime, totalDuration, onTimeUpdate]);
 
-  // Generate audio for a specific chunk
-  const generateChunkAudio = useCallback(async (chunkText: string, voice: string): Promise<string | null> => {
+  // Handle external seek requests (from word clicks)
+  useEffect(() => {
+    if (seekToTime !== undefined && seekToTime >= 0 && totalDuration > 0) {
+      seekToPosition(seekToTime);
+    }
+  }, [seekToTime, totalDuration]);
+
+  // Generate audio for a chunk and get actual duration
+  const generateChunkAudio = useCallback(async (chunkText: string, voice: string): Promise<{ url: string; duration: number } | null> => {
     try {
       const response = await fetch(TTS_API, {
         method: "POST",
@@ -173,58 +200,114 @@ export function TTSPlayer({ text, level = "B1", className = "", onTimeUpdate, on
       const audioBlob = await fetch(`data:audio/mp3;base64,${data.data}`).then(r => r.blob());
       const audioUrl = URL.createObjectURL(audioBlob);
       audioUrlsRef.current.push(audioUrl);
-      return audioUrl;
+
+      // Get actual duration by loading the audio
+      const duration = await new Promise<number>((resolve) => {
+        const tempAudio = new Audio(audioUrl);
+        tempAudio.addEventListener('loadedmetadata', () => {
+          resolve(tempAudio.duration);
+        });
+        tempAudio.addEventListener('error', () => {
+          // Fallback: estimate based on word count (~150 WPM)
+          const wordCount = countWords(chunkText);
+          resolve((wordCount / 150) * 60);
+        });
+      });
+
+      return { url: audioUrl, duration };
     } catch (err) {
       console.error("Chunk audio generation error:", err);
       return null;
     }
   }, []);
 
-  // Play a specific chunk
-  const playChunk = useCallback(async (chunkIndex: number) => {
+  // Preload all audio chunks and build timing map
+  const preloadAllChunks = useCallback(async (voice: string): Promise<boolean> => {
+    setIsPreloading(true);
+    setLoadingText("Preparing audio...");
+
+    const textChunks = splitTextIntoChunks(text);
+    const chunkDataArray: ChunkData[] = [];
+    let cumulativeTime = 0;
+    let cumulativeWordIndex = 0;
+
+    for (let i = 0; i < textChunks.length; i++) {
+      if (isStoppedRef.current) {
+        setIsPreloading(false);
+        return false;
+      }
+
+      setLoadingText(`Loading ${i + 1} of ${textChunks.length}...`);
+
+      const result = await generateChunkAudio(textChunks[i], voice);
+      if (!result) {
+        setIsPreloading(false);
+        return false;
+      }
+
+      const wordCount = countWords(textChunks[i]);
+
+      chunkDataArray.push({
+        text: textChunks[i],
+        startTime: cumulativeTime,
+        endTime: cumulativeTime + result.duration,
+        audioUrl: result.url,
+        duration: result.duration,
+        wordStartIndex: cumulativeWordIndex,
+        wordEndIndex: cumulativeWordIndex + wordCount - 1,
+      });
+
+      cumulativeTime += result.duration;
+      cumulativeWordIndex += wordCount;
+    }
+
+    chunksRef.current = chunkDataArray;
+    totalWordsRef.current = cumulativeWordIndex;
+    setTotalDuration(cumulativeTime);
+    setIsPreloading(false);
+    return true;
+  }, [text, generateChunkAudio]);
+
+  // Find chunk index for a given time
+  const findChunkForTime = useCallback((time: number): number => {
+    for (let i = 0; i < chunksRef.current.length; i++) {
+      if (time >= chunksRef.current[i].startTime && time < chunksRef.current[i].endTime) {
+        return i;
+      }
+    }
+    return chunksRef.current.length - 1;
+  }, []);
+
+  // Play a specific chunk from a specific time offset
+  const playChunkFromTime = useCallback(async (chunkIndex: number, startOffset: number = 0) => {
     if (isStoppedRef.current || chunkIndex >= chunksRef.current.length) {
       setIsPlaying(false);
-      setIsLoading(false);
-      setProgress(100);
+      setIsPaused(false);
       return;
     }
 
-    setCurrentChunkIndex(chunkIndex);
-    setLoadingText(`Loading part ${chunkIndex + 1} of ${totalChunksRef.current}...`);
+    const chunk = chunksRef.current[chunkIndex];
+    if (!chunk.audioUrl) return;
 
-    const chunkText = chunksRef.current[chunkIndex];
-    const audioUrl = await generateChunkAudio(chunkText, selectedNarrator.id);
-
-    if (!audioUrl || isStoppedRef.current) {
-      if (!isStoppedRef.current) {
-        setError("Failed to generate audio");
-        setIsPlaying(false);
-        setIsLoading(false);
-      }
-      return;
-    }
+    currentChunkIndexRef.current = chunkIndex;
 
     if (audioRef.current) {
       audioRef.current.pause();
     }
 
-    const audio = new Audio(audioUrl);
+    const audio = new Audio(chunk.audioUrl);
     audio.playbackRate = speed;
+    audio.currentTime = startOffset;
     audioRef.current = audio;
 
     audio.ontimeupdate = () => {
-      if (audio.duration && totalChunksRef.current > 0) {
-        // Calculate overall progress
-        const chunkProgress = audio.currentTime / audio.duration;
-        const overallProgress = ((chunkIndex + chunkProgress) / totalChunksRef.current) * 100;
-        setProgress(overallProgress);
-      }
+      const absoluteTime = chunk.startTime + audio.currentTime;
+      setCurrentTime(absoluteTime);
     };
 
     audio.onended = () => {
       if (!isStoppedRef.current) {
-        // Play next chunk
-        playChunk(chunkIndex + 1);
+        playChunkFromTime(chunkIndex + 1, 0);
       }
     };
 
@@ -232,83 +315,161 @@ export function TTSPlayer({ text, level = "B1", className = "", onTimeUpdate, on
       if (!isStoppedRef.current) {
         setError("Playback failed");
         setIsPlaying(false);
-        setIsLoading(false);
+        setIsPaused(false);
       }
     };
 
     try {
       await audio.play();
-      setIsLoading(false);
+      setIsPlaying(true);
+      setIsPaused(false);
     } catch (err) {
       console.error("Play error:", err);
       setError("Failed to play audio");
       setIsPlaying(false);
-      setIsLoading(false);
+      setIsPaused(false);
     }
-  }, [generateChunkAudio, selectedNarrator.id, speed]);
+  }, [speed]);
 
-  // Start playing from the beginning
+  // Seek to a specific time position
+  const seekToPosition = useCallback((targetTime: number) => {
+    if (chunksRef.current.length === 0) return;
+
+    const clampedTime = Math.max(0, Math.min(targetTime, totalDuration));
+    const chunkIndex = findChunkForTime(clampedTime);
+    const chunk = chunksRef.current[chunkIndex];
+    const offsetInChunk = clampedTime - chunk.startTime;
+
+    pausedTimeRef.current = clampedTime;
+    setCurrentTime(clampedTime);
+
+    if (isPlaying && !isPaused) {
+      playChunkFromTime(chunkIndex, offsetInChunk);
+    }
+  }, [totalDuration, findChunkForTime, isPlaying, isPaused, playChunkFromTime]);
+
+  // Start playing (with preload if needed)
   const startPlaying = useCallback(async () => {
-    if (!text || isLoading) return;
+    if (!text || isLoading || isPreloading) return;
 
     setIsLoading(true);
     setError(null);
     isStoppedRef.current = false;
 
-    // Clean up previous audio URLs
-    audioUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
-    audioUrlsRef.current = [];
+    // Check if we need to preload (new text or voice change)
+    if (chunksRef.current.length === 0) {
+      // Clean up previous audio
+      audioUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
+      audioUrlsRef.current = [];
 
-    // Split text into chunks
-    const chunks = splitTextIntoChunks(text);
-    chunksRef.current = chunks;
-    totalChunksRef.current = chunks.length;
-
-    setCurrentChunkIndex(0);
-    setProgress(0);
-    setIsPlaying(true);
-
-    // Start playing first chunk
-    await playChunk(0);
-  }, [text, isLoading, playChunk]);
-
-  const togglePlay = useCallback(() => {
-    if (!audioRef.current || !isPlaying) {
-      startPlaying();
-      return;
+      const success = await preloadAllChunks(selectedNarrator.id);
+      if (!success) {
+        setError("Failed to load audio");
+        setIsLoading(false);
+        return;
+      }
     }
 
-    if (isPlaying) {
+    setIsLoading(false);
+
+    // Resume from paused position or start from beginning
+    const startTime = isPaused ? pausedTimeRef.current : 0;
+    const chunkIndex = findChunkForTime(startTime);
+    const chunk = chunksRef.current[chunkIndex];
+    const offsetInChunk = startTime - chunk.startTime;
+
+    await playChunkFromTime(chunkIndex, offsetInChunk);
+  }, [text, isLoading, isPreloading, preloadAllChunks, selectedNarrator.id, isPaused, findChunkForTime, playChunkFromTime]);
+
+  // Pause playback
+  const pause = useCallback(() => {
+    if (audioRef.current && isPlaying) {
       audioRef.current.pause();
-      setIsPlaying(false);
-    } else {
-      audioRef.current.play();
-      setIsPlaying(true);
+      pausedTimeRef.current = currentTime;
+      setIsPaused(true);
     }
-  }, [isPlaying, startPlaying]);
+  }, [isPlaying, currentTime]);
 
+  // Resume playback
+  const resume = useCallback(async () => {
+    if (isPaused && chunksRef.current.length > 0) {
+      const chunkIndex = findChunkForTime(pausedTimeRef.current);
+      const chunk = chunksRef.current[chunkIndex];
+      const offsetInChunk = pausedTimeRef.current - chunk.startTime;
+      await playChunkFromTime(chunkIndex, offsetInChunk);
+    }
+  }, [isPaused, findChunkForTime, playChunkFromTime]);
+
+  // Toggle play/pause
+  const togglePlay = useCallback(() => {
+    if (isPlaying && !isPaused) {
+      pause();
+    } else if (isPaused) {
+      resume();
+    } else {
+      startPlaying();
+    }
+  }, [isPlaying, isPaused, pause, resume, startPlaying]);
+
+  // Stop playback completely
   const stop = useCallback(() => {
     isStoppedRef.current = true;
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
     }
-    // Clean up audio URLs
-    audioUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
-    audioUrlsRef.current = [];
-
     setIsPlaying(false);
-    setIsLoading(false);
-    setProgress(0);
-    setCurrentChunkIndex(0);
+    setIsPaused(false);
+    setCurrentTime(0);
+    pausedTimeRef.current = 0;
   }, []);
 
-  const handleNarratorChange = useCallback((narrator: typeof NARRATORS[0]) => {
+  // Handle narrator change - preserve position
+  const handleNarratorChange = useCallback(async (narrator: typeof NARRATORS[0]) => {
+    const wasPlaying = isPlaying && !isPaused;
+    const savedTime = currentTime;
+
+    // Stop current playback
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+
     setSelectedNarrator(narrator);
     setIsExpanded(false);
-    stop();
-  }, [stop]);
 
+    // Clear cached audio (need to regenerate for new voice)
+    audioUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
+    audioUrlsRef.current = [];
+    chunksRef.current = [];
+    setTotalDuration(0);
+
+    // If was playing, reload and resume from same position
+    if (wasPlaying || isPaused) {
+      setIsLoading(true);
+      isStoppedRef.current = false;
+
+      const success = await preloadAllChunks(narrator.id);
+      if (success) {
+        setIsLoading(false);
+        pausedTimeRef.current = Math.min(savedTime, chunksRef.current[chunksRef.current.length - 1]?.endTime || 0);
+        setCurrentTime(pausedTimeRef.current);
+
+        if (wasPlaying) {
+          const chunkIndex = findChunkForTime(pausedTimeRef.current);
+          const chunk = chunksRef.current[chunkIndex];
+          const offsetInChunk = pausedTimeRef.current - chunk.startTime;
+          await playChunkFromTime(chunkIndex, offsetInChunk);
+        } else {
+          setIsPaused(true);
+        }
+      } else {
+        setIsLoading(false);
+        setError("Failed to reload audio");
+      }
+    }
+  }, [isPlaying, isPaused, currentTime, preloadAllChunks, findChunkForTime, playChunkFromTime]);
+
+  // Handle speed change
   const handleSpeedChange = useCallback((newSpeed: number) => {
     setSpeed(newSpeed);
     if (audioRef.current) {
@@ -316,15 +477,26 @@ export function TTSPlayer({ text, level = "B1", className = "", onTimeUpdate, on
     }
   }, []);
 
-  // Calculate current time for display
-  const currentTime = (progress / 100) * estimatedDuration;
+  // Handle progress bar click for seeking
+  const handleProgressClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (totalDuration <= 0) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percentage = x / rect.width;
+    const targetTime = percentage * totalDuration;
+
+    seekToPosition(targetTime);
+  }, [totalDuration, seekToPosition]);
 
   const formatTime = (seconds: number) => {
-    if (!isFinite(seconds)) return "0:00";
+    if (!isFinite(seconds) || seconds < 0) return "0:00";
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
+
+  const progress = totalDuration > 0 ? (currentTime / totalDuration) * 100 : 0;
 
   return (
     <div className={`relative ${className}`}>
@@ -366,15 +538,15 @@ export function TTSPlayer({ text, level = "B1", className = "", onTimeUpdate, on
           <div className="flex items-center gap-3 mb-2">
             <button
               onClick={togglePlay}
-              disabled={isLoading}
+              disabled={isLoading || isPreloading}
               className="w-9 h-9 rounded-full flex items-center justify-center bg-[var(--color-forest)] text-white hover:bg-[var(--color-forest-light)] transition-colors disabled:opacity-50"
             >
-              {isLoading ? (
+              {isLoading || isPreloading ? (
                 <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
-              ) : isPlaying ? (
+              ) : isPlaying && !isPaused ? (
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
                 </svg>
@@ -390,14 +562,15 @@ export function TTSPlayer({ text, level = "B1", className = "", onTimeUpdate, on
                 {selectedNarrator.name}
               </p>
               <p className="text-[11px] text-[var(--color-text-muted)]">
-                {isLoading ? loadingText : selectedNarrator.role}
+                {isLoading || isPreloading ? loadingText : selectedNarrator.role}
               </p>
             </div>
 
-            {(isPlaying || isLoading) && (
+            {(isPlaying || isPaused) && (
               <button
                 onClick={stop}
                 className="ml-auto p-1.5 rounded-full hover:bg-[var(--color-cream-dark)] transition-colors"
+                title="Stop"
               >
                 <svg className="w-4 h-4 text-[var(--color-text-muted)]" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M6 6h12v12H6z" />
@@ -406,16 +579,19 @@ export function TTSPlayer({ text, level = "B1", className = "", onTimeUpdate, on
             )}
           </div>
 
-          {/* Progress Bar */}
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-1 bg-[var(--color-warm)] rounded-full overflow-hidden">
+          {/* Progress Bar - Clickable for seeking */}
+          <div
+            className="flex items-center gap-3 cursor-pointer group"
+            onClick={handleProgressClick}
+          >
+            <div className="flex-1 h-1.5 bg-[var(--color-warm)] rounded-full overflow-hidden group-hover:h-2 transition-all">
               <div
                 className="h-full bg-[var(--color-forest)] rounded-full transition-all duration-150"
                 style={{ width: `${progress}%` }}
               />
             </div>
             <span className="text-[10px] text-[var(--color-text-muted)] tabular-nums w-16 text-right">
-              {formatTime(currentTime)} / {formatTime(estimatedDuration)}
+              {formatTime(currentTime)} / {formatTime(totalDuration)}
             </span>
           </div>
 

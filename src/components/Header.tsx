@@ -118,10 +118,10 @@ export function Header() {
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
           <nav className="md:hidden py-3 border-t border-gray-100">
-            <div className="flex gap-6">
+            <div className="flex gap-6 overflow-x-auto">
               <Link
                 href="/"
-                className={`text-sm font-medium py-2 ${
+                className={`text-sm font-medium py-2 whitespace-nowrap ${
                   isNewsActive ? "text-forest" : "text-muted"
                 }`}
                 onClick={() => setMobileMenuOpen(false)}
@@ -130,7 +130,7 @@ export function Header() {
               </Link>
               <Link
                 href="/learn"
-                className={`text-sm font-medium py-2 ${
+                className={`text-sm font-medium py-2 whitespace-nowrap ${
                   isLearnActive ? "text-forest" : "text-muted"
                 }`}
                 onClick={() => setMobileMenuOpen(false)}
@@ -139,7 +139,7 @@ export function Header() {
               </Link>
               <Link
                 href="/travel"
-                className={`text-sm font-medium py-2 ${
+                className={`text-sm font-medium py-2 whitespace-nowrap ${
                   isTravelActive ? "text-forest" : "text-muted"
                 }`}
                 onClick={() => setMobileMenuOpen(false)}
@@ -148,7 +148,7 @@ export function Header() {
               </Link>
               <Link
                 href="/explore"
-                className={`text-sm font-medium py-2 ${
+                className={`text-sm font-medium py-2 whitespace-nowrap ${
                   isExploreActive ? "text-forest" : "text-muted"
                 }`}
                 onClick={() => setMobileMenuOpen(false)}
@@ -157,7 +157,7 @@ export function Header() {
               </Link>
               <Link
                 href="/stories"
-                className={`text-sm font-medium py-2 ${
+                className={`text-sm font-medium py-2 whitespace-nowrap ${
                   isStoriesActive ? "text-forest" : "text-muted"
                 }`}
                 onClick={() => setMobileMenuOpen(false)}
