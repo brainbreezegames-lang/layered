@@ -16,7 +16,7 @@ async function generateWithAI(prompt: string, systemPrompt: string = ""): Promis
       "X-Title": "Layered",
     },
     body: JSON.stringify({
-      model: "anthropic/claude-3.5-sonnet",
+      model: "google/gemini-2.0-flash-exp:free",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: prompt },
