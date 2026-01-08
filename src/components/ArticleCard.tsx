@@ -12,6 +12,7 @@ interface ArticleCardArticle {
   heroImage: string | null;
   heroAlt: string;
   publishedAt?: string;
+  wordCount?: Record<string, number>;
 }
 
 interface ArticleCardProps {
@@ -27,6 +28,9 @@ const categoryLabels: Record<Category, string> = {
 };
 
 export function ArticleCard({ article }: ArticleCardProps) {
+  // Check if article is processed (has A1 level)
+  const isProcessing = article.wordCount && !article.wordCount.A1 && article.wordCount.raw;
+
   return (
     <Link
       href={`/article/${article.slug}`}
@@ -53,6 +57,16 @@ export function ArticleCard({ article }: ArticleCardProps) {
             {categoryLabels[article.category]}
           </span>
         </div>
+        {/* Processing indicator */}
+        {isProcessing && (
+          <div className="absolute top-3 right-3 bg-blue-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
+            <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            Processing
+          </div>
+        )}
       </div>
 
       {/* Content */}
