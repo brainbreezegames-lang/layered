@@ -140,21 +140,21 @@ export function TTSPlayer({ text, level = "B1", className = "", onTimeUpdate, on
     };
   }, []);
 
+  // Estimate total duration based on text length (rough estimate: ~150 words per minute)
+  const estimatedDuration = Math.ceil((text.split(/\s+/).length / 150) * 60);
+
   // Notify parent of play state changes
   useEffect(() => {
     onPlayStateChange?.(isPlaying);
   }, [isPlaying, onPlayStateChange]);
 
-  // Notify parent of time updates
+  // Notify parent of time updates - call immediately and on progress change
   useEffect(() => {
     if (onTimeUpdate) {
       const currentTime = (progress / 100) * estimatedDuration;
       onTimeUpdate(currentTime, estimatedDuration);
     }
-  }, [progress, onTimeUpdate]);
-
-  // Estimate total duration based on text length (rough estimate: ~150 words per minute)
-  const estimatedDuration = Math.ceil((text.split(/\s+/).length / 150) * 60);
+  }, [progress, onTimeUpdate, estimatedDuration]);
 
   // Generate audio for a specific chunk
   const generateChunkAudio = useCallback(async (chunkText: string, voice: string): Promise<string | null> => {
