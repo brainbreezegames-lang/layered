@@ -270,10 +270,6 @@ export default function StoryPage({ params }: { params: Promise<{ slug: string }
                 </div>
               </div>
 
-              {/* Audio Player - Desktop */}
-              <div className="hidden md:block">
-                <TTSPlayer text={content} level={level} />
-              </div>
 
               {/* Author bio - Desktop */}
               {story.authorBio && (
@@ -302,8 +298,8 @@ export default function StoryPage({ params }: { params: Promise<{ slug: string }
 
           {/* Story content */}
           <div className="md:col-span-8 lg:col-span-9">
-            {/* Audio Player - Mobile */}
-            <div className="md:hidden mb-6">
+            {/* Audio Player - Above content for all devices */}
+            <div className="mb-6">
               <TTSPlayer text={content} level={level} />
             </div>
 

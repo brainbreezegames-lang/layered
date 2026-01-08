@@ -1,27 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// Microsoft Edge TTS voices - natural neural voices
-const VOICES = {
-  "en-US-female": "en-US-JennyNeural",
-  "en-US-male": "en-US-GuyNeural",
-  "en-GB-female": "en-GB-SoniaNeural",
-  "en-GB-male": "en-GB-RyanNeural",
-  "en-AU-female": "en-AU-NatashaNeural",
-  "en-AU-male": "en-AU-WilliamNeural",
-} as const;
+export const maxDuration = 60;
 
-type VoiceKey = keyof typeof VOICES;
+// Split text into chunks for Google TTS (max ~200 chars per request)
+function splitText(text: string, maxLength: number = 200): string[] {
+  const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+  const chunks: string[] = [];
+  let current = "";
 
-// Rate adjustment based on CEFR level
-const RATE_BY_LEVEL: Record<string, string> = {
-  A1: "-20%",
-  A2: "-10%",
-  B1: "+0%",
-  B2: "+5%",
-  C1: "+10%",
-};
+  for (const sentence of sentences) {
+    if ((current + sentence).length <= maxLength) {
+      current += sentence;
+    } else {
+      if (current) chunks.push(current.trim());
+      current = sentence;
+    }
+  }
+  if (current) chunks.push(current.trim());
 
-export const maxDuration = 60; // Allow up to 60 seconds for audio generation
+  return chunks;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,43 +29,58 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Text is required" }, { status: 400 });
     }
 
-    // Limit text length (3000 chars max for performance on serverless)
+    // Limit text length
     const truncatedText = text.slice(0, 3000);
 
-    // Get voice and rate settings
-    const voiceName = VOICES[voice as VoiceKey] || VOICES["en-US-female"];
-    const rate = RATE_BY_LEVEL[level] || "+0%";
+    // Split into chunks
+    const chunks = splitText(truncatedText);
 
-    // Dynamic import to avoid issues with module loading
-    const { MsEdgeTTS, OUTPUT_FORMAT } = await import("msedge-tts");
+    // Determine language code based on voice
+    const langCode = voice.startsWith("en-GB") ? "en-GB" :
+                     voice.startsWith("en-AU") ? "en-AU" : "en-US";
 
-    // Create TTS instance
-    const tts = new MsEdgeTTS();
-    await tts.setMetadata(voiceName, OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
+    // Fetch audio for each chunk
+    const audioChunks: ArrayBuffer[] = [];
 
-    // Generate audio - returns { audioStream, metadataStream }
-    const result = tts.toStream(truncatedText, { rate, pitch: "+0Hz", volume: "+0%" });
+    for (const chunk of chunks) {
+      const encodedText = encodeURIComponent(chunk);
+      const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${langCode}&client=tw-ob&q=${encodedText}`;
 
-    // Collect audio chunks from the audio stream with timeout
-    const chunks: Buffer[] = [];
+      const response = await fetch(ttsUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Referer": "https://translate.google.com/",
+        },
+      });
 
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error("Audio generation timed out")), 55000);
-    });
-
-    const audioPromise = (async () => {
-      for await (const chunk of result.audioStream) {
-        chunks.push(Buffer.from(chunk));
+      if (!response.ok) {
+        console.error(`TTS chunk failed: ${response.status}`);
+        continue;
       }
-      return Buffer.concat(chunks);
-    })();
 
-    const audioBuffer = await Promise.race([audioPromise, timeoutPromise]);
+      const buffer = await response.arrayBuffer();
+      if (buffer.byteLength > 0) {
+        audioChunks.push(buffer);
+      }
+    }
 
-    return new NextResponse(audioBuffer, {
+    if (audioChunks.length === 0) {
+      throw new Error("No audio generated");
+    }
+
+    // Combine all audio chunks
+    const totalLength = audioChunks.reduce((acc, buf) => acc + buf.byteLength, 0);
+    const combined = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const chunk of audioChunks) {
+      combined.set(new Uint8Array(chunk), offset);
+      offset += chunk.byteLength;
+    }
+
+    return new NextResponse(combined, {
       headers: {
         "Content-Type": "audio/mpeg",
-        "Content-Length": audioBuffer.length.toString(),
+        "Content-Length": combined.length.toString(),
         "Cache-Control": "public, max-age=86400",
       },
     });
@@ -81,15 +94,13 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET endpoint to list available voices
 export async function GET() {
   return NextResponse.json({
-    voices: Object.entries(VOICES).map(([key, name]) => ({
-      id: key,
-      name: name,
-      gender: key.includes("female") ? "female" : "male",
-      accent: key.split("-").slice(0, 2).join("-"),
-    })),
-    levels: Object.keys(RATE_BY_LEVEL),
+    voices: [
+      { id: "en-US-female", name: "US English", gender: "neutral", accent: "en-US" },
+      { id: "en-GB-female", name: "UK English", gender: "neutral", accent: "en-GB" },
+      { id: "en-AU-female", name: "AU English", gender: "neutral", accent: "en-AU" },
+    ],
+    levels: ["A1", "A2", "B1", "B2", "C1"],
   });
 }
