@@ -10,6 +10,7 @@ import { ExerciseSection } from "@/components/exercises/ExerciseSection";
 import { RelatedArticles } from "@/components/article/RelatedArticles";
 import { mockArticle, mockArticles } from "@/lib/data/mock-articles";
 import { Level, Category, ExerciseSet } from "@/types";
+import { filterVocabularyForLevel } from "@/lib/vocabulary-filter";
 
 interface DbArticle {
   id: string;
@@ -99,7 +100,7 @@ export default function ArticlePage({
     title: a.title,
     subtitle: a.subtitle || "",
     category: a.category as Category,
-    heroImage: a.heroImage || "/placeholder.jpg",
+    heroImage: a.heroImage,
     heroAlt: a.heroAlt || a.title,
     wordCount: "wordCounts" in a ? a.wordCounts : a.wordCount,
     readTime: "readTimes" in a ? a.readTimes : a.readTime,
@@ -133,15 +134,21 @@ export default function ArticlePage({
       </div>
 
       {/* Hero Image - Full width with editorial overlay */}
-      <div className="relative w-full aspect-[16/9] md:aspect-[21/9]">
-        <Image
-          src={displayArticle.heroImage || "/placeholder.jpg"}
-          alt={displayArticle.heroAlt || displayArticle.title}
-          fill
-          className="object-cover"
-          priority
-          sizes="100vw"
-        />
+      <div className="relative w-full aspect-[16/9] md:aspect-[21/9] bg-stone-200">
+        {displayArticle.heroImage ? (
+          <Image
+            src={displayArticle.heroImage}
+            alt={displayArticle.heroAlt || displayArticle.title}
+            fill
+            className="object-cover"
+            priority
+            sizes="100vw"
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-stone-200 to-stone-300">
+            <span className="font-display text-8xl text-stone-400">{displayArticle.title.charAt(0)}</span>
+          </div>
+        )}
         {/* Gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
 
@@ -187,11 +194,7 @@ export default function ArticlePage({
             {/* Article text */}
             <ArticleContent
               content={content}
-              vocabulary={vocabulary.filter(
-                (v) =>
-                  ["A1", "A2", "B1", "B2", "C1"].indexOf(v.level) <=
-                  ["A1", "A2", "B1", "B2", "C1"].indexOf(level)
-              )}
+              vocabulary={filterVocabularyForLevel(vocabulary, level)}
             />
 
             {/* Exercises */}

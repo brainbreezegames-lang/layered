@@ -4,6 +4,7 @@ import { useState, useEffect, use, useCallback } from "react";
 import Link from "next/link";
 import { TTSPlayer } from "@/components/audio/TTSPlayer";
 import { useLevel } from "@/components/LevelContext";
+import { filterVocabularyForLevel } from "@/lib/vocabulary-filter";
 
 interface Destination {
   id: string;
@@ -79,8 +80,8 @@ export default function SectionPage({
 
   const getVocabularyForLevel = useCallback(() => {
     if (!section?.vocabulary) return [];
-    const levelIndex = levels.indexOf(level);
-    return section.vocabulary.filter((v) => levels.indexOf(v.level) <= levelIndex);
+    // Use smart filter that removes common words and only shows challenging vocabulary
+    return filterVocabularyForLevel(section.vocabulary, level);
   }, [section, level]);
 
   const highlightVocabulary = useCallback(

@@ -6,6 +6,7 @@ import Image from "next/image";
 import { TTSPlayer } from "@/components/audio/TTSPlayer";
 import { SyncedTextReader } from "@/components/audio/SyncedTextReader";
 import { useLevel } from "@/components/LevelContext";
+import { filterVocabularyForLevel } from "@/lib/vocabulary-filter";
 
 interface Story {
   id: string;
@@ -63,10 +64,26 @@ export default function StoryPage({ params }: { params: Promise<{ slug: string }
     setAnswers({});
   }, [level]);
 
+  // Close tooltip when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest(".vocab-highlight") && !target.closest(".vocab-tooltip")) {
+        setActiveTooltip(null);
+      }
+    };
+
+    if (activeTooltip) {
+      document.addEventListener("click", handleClickOutside);
+      return () => document.removeEventListener("click", handleClickOutside);
+    }
+  }, [activeTooltip]);
+
   const getVocabularyForLevel = useCallback(() => {
     if (!story?.vocabulary) return [];
-    const levelIndex = levels.indexOf(level);
-    return story.vocabulary.filter(v => levels.indexOf(v.level) <= levelIndex);
+    // Use smart filter that removes common words like "Christmas", "dollar", etc.
+    // and only shows words genuinely challenging for the user's level
+    return filterVocabularyForLevel(story.vocabulary, level);
   }, [story, level]);
 
   // Handle time updates from TTS player
@@ -91,6 +108,54 @@ export default function StoryPage({ params }: { params: Promise<{ slug: string }
     const vocab = getVocabularyForLevel();
     return new Set(vocab.map(v => v.word.toLowerCase()));
   }, [getVocabularyForLevel]);
+
+  // Create a map for quick vocab lookup
+  const vocabMap = useMemo(() => {
+    const vocab = getVocabularyForLevel();
+    return new Map(vocab.map(v => [v.word.toLowerCase(), v]));
+  }, [getVocabularyForLevel]);
+
+  // Render word with vocabulary highlighting for SyncedTextReader
+  const renderWord = useCallback(
+    (word: string, isActive: boolean, isPast: boolean, onSeekClick?: () => void) => {
+      const cleanWord = word.toLowerCase().replace(/[.,!?;:'"]/g, "");
+      const vocabItem = vocabMap.get(cleanWord);
+      const isVocabActive = activeTooltip === cleanWord;
+
+      // Build class names for synced highlighting
+      const syncClasses = [
+        "synced-word",
+        isActive && followAlong ? "synced-word-active" : "",
+        isPast && followAlong ? "synced-word-past" : "",
+      ].filter(Boolean).join(" ");
+
+      if (vocabItem) {
+        // Vocabulary word - show definition on click, don't seek
+        return (
+          <span
+            className={`vocab-highlight ${isVocabActive ? "active" : ""} ${syncClasses}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              setActiveTooltip(isVocabActive ? null : cleanWord);
+            }}
+          >
+            {word}
+          </span>
+        );
+      }
+
+      // Regular word - can click to seek
+      return (
+        <span
+          className={`${syncClasses} ${onSeekClick ? "synced-word-clickable" : ""}`}
+          onClick={onSeekClick}
+        >
+          {word}
+        </span>
+      );
+    },
+    [vocabMap, activeTooltip, followAlong]
+  );
 
   const highlightVocabulary = useCallback((text: string, vocab: { word: string; definition: string; level: string }[]) => {
     if (!vocab || vocab.length === 0) return text;
@@ -306,6 +371,13 @@ export default function StoryPage({ params }: { params: Promise<{ slug: string }
               </div>
             )}
 
+            {/* Vocabulary hint */}
+            {vocab.length > 0 && (
+              <p className="text-sm text-[var(--color-text-muted)] mb-6 no-print">
+                <span className="vocab-highlight">Highlighted words</span> have definitions — tap to learn.
+              </p>
+            )}
+
             {/* Story text - Synced or Regular based on playback state */}
             <div className={`reading-mode ${isPlaying && followAlong ? "active" : ""}`}>
               {duration > 0 ? (
@@ -315,6 +387,7 @@ export default function StoryPage({ params }: { params: Promise<{ slug: string }
                   duration={duration}
                   isPlaying={isPlaying && followAlong}
                   className="prose prose-lg max-w-none mb-12 text-[var(--color-text)] leading-[1.85] text-lg md:text-xl"
+                  renderWord={renderWord}
                   onWordClick={handleWordSeek}
                   vocabWords={vocabWords}
                 />
@@ -366,6 +439,24 @@ export default function StoryPage({ params }: { params: Promise<{ slug: string }
                 </div>
               )}
             </div>
+
+            {/* Vocabulary Tooltip for synced mode (when activeTooltip is a word) */}
+            {activeTooltip && vocabMap.has(activeTooltip) && (
+              <div className="vocab-tooltip">
+                <button
+                  className="close-btn"
+                  onClick={() => setActiveTooltip(null)}
+                  aria-label="Close definition"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+                <div className="word">{vocabMap.get(activeTooltip)!.word}</div>
+                <div className="definition">{vocabMap.get(activeTooltip)!.definition}</div>
+                <span className="level-tag">{vocabMap.get(activeTooltip)!.level} vocabulary</span>
+              </div>
+            )}
 
             {/* Mobile author bio */}
             {story.authorBio && (

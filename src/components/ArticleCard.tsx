@@ -9,7 +9,7 @@ interface ArticleCardArticle {
   slug: string;
   title: string;
   category: Category;
-  heroImage: string;
+  heroImage: string | null;
   heroAlt: string;
   publishedAt?: string;
 }
@@ -33,14 +33,20 @@ export function ArticleCard({ article }: ArticleCardProps) {
       className="article-card block"
     >
       {/* Image */}
-      <div className="relative aspect-[16/10] overflow-hidden">
-        <Image
-          src={article.heroImage}
-          alt={article.heroAlt}
-          fill
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-        />
+      <div className="relative aspect-[16/10] overflow-hidden bg-stone-100">
+        {article.heroImage ? (
+          <Image
+            src={article.heroImage}
+            alt={article.heroAlt}
+            fill
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-stone-100 to-stone-200">
+            <span className="font-display text-4xl text-stone-300">{article.title.charAt(0)}</span>
+          </div>
+        )}
         {/* Category pill overlay */}
         <div className="absolute top-3 left-3">
           <span className={`category-pill category-${article.category}`}>

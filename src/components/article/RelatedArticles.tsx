@@ -8,7 +8,7 @@ interface RelatedArticle {
   title: string;
   subtitle: string;
   category: Category;
-  heroImage: string;
+  heroImage: string | null;
   heroAlt: string;
 }
 
@@ -40,14 +40,20 @@ export function RelatedArticles({ articles }: RelatedArticlesProps) {
             href={`/article/${article.slug}`}
             className="group block bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
           >
-            <div className="relative h-48">
-              <Image
-                src={article.heroImage}
-                alt={article.heroAlt}
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-300"
-                sizes="(max-width: 768px) 100vw, 33vw"
-              />
+            <div className="relative h-48 bg-stone-100">
+              {article.heroImage ? (
+                <Image
+                  src={article.heroImage}
+                  alt={article.heroAlt}
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  sizes="(max-width: 768px) 100vw, 33vw"
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-stone-100 to-stone-200">
+                  <span className="font-display text-5xl text-stone-300">{article.title.charAt(0)}</span>
+                </div>
+              )}
             </div>
             <div className="p-4">
               <p className="text-sm font-ui font-medium text-primary mb-2">

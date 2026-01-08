@@ -126,7 +126,7 @@ export default function HomePage() {
     title: article.title,
     subtitle: article.subtitle || "",
     category: article.category as Category,
-    heroImage: article.heroImage || "/placeholder.jpg",
+    heroImage: article.heroImage,
     heroAlt: article.heroAlt || article.title,
     wordCount: "wordCounts" in article
       ? (article.wordCounts as Record<string, number>)

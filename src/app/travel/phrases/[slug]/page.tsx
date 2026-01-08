@@ -4,6 +4,7 @@ import { useState, useEffect, use, useCallback } from "react";
 import Link from "next/link";
 import { TTSPlayer } from "@/components/audio/TTSPlayer";
 import { useLevel } from "@/components/LevelContext";
+import { filterVocabularyForLevel } from "@/lib/vocabulary-filter";
 
 interface TravelPhrase {
   id: string;
@@ -64,8 +65,8 @@ export default function TravelPhrasePage({
 
   const getVocabularyForLevel = useCallback(() => {
     if (!phrase?.vocabulary) return [];
-    const levelIndex = levels.indexOf(level);
-    return phrase.vocabulary.filter((v) => levels.indexOf(v.level) <= levelIndex);
+    // Use smart filter that removes common words and only shows challenging vocabulary
+    return filterVocabularyForLevel(phrase.vocabulary, level);
   }, [phrase, level]);
 
   if (loading) {

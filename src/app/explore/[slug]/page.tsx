@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { TTSPlayer } from "@/components/audio/TTSPlayer";
 import { useLevel } from "@/components/LevelContext";
+import { filterVocabularyForLevel } from "@/lib/vocabulary-filter";
 
 interface ExploreArticle {
   id: string;
@@ -58,10 +59,8 @@ export default function ExploreArticlePage({
 
   const getVocabularyForLevel = useCallback(() => {
     if (!article?.vocabulary) return [];
-    const levelIndex = levels.indexOf(level);
-    return article.vocabulary.filter(
-      (v) => levels.indexOf(v.level) <= levelIndex
-    );
+    // Use smart filter that removes common words and only shows challenging vocabulary
+    return filterVocabularyForLevel(article.vocabulary, level);
   }, [article, level]);
 
   const highlightVocabulary = useCallback(

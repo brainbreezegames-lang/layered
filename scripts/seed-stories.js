@@ -206,15 +206,29 @@ Return ONLY valid JSON:
 async function generateVocabulary(content) {
   console.log(`  Generating vocabulary list...`);
 
-  const prompt = `Extract 30 important vocabulary words from this story and categorize by CEFR level.
+  const prompt = `You are an expert ESL vocabulary specialist. Extract 30 vocabulary words from this story that are genuinely worth teaching to language learners.
 
-STORY CONTENT:
-${content.B1}
+CRITICAL RULES:
+1. DO NOT include common everyday words that all English speakers know (e.g., "Christmas", "dollar", "cat", "dog", "house", "food", "happy", "sad", "go", "come")
+2. A1 words should be basic but useful verbs/nouns that beginners need (e.g., "count", "decide", "expensive")
+3. A2 words should be slightly less common (e.g., "afford", "generous", "envelope")
+4. B1 words should be intermediate vocabulary (e.g., "possession", "sacrifice", "desperate")
+5. B2 words should be sophisticated (e.g., "meticulous", "irreplaceable", "ornament")
+6. C1 words should be advanced/literary (e.g., "impecunious", "cascade", "tableau")
 
-Return ONLY a JSON array:
-[{"word": "example", "definition": "a thing characteristic of its kind", "level": "B1"}]
+STORY CONTENT (C1 version for richest vocabulary):
+${content.C1}
 
-Include words useful for language learners at levels A1, A2, B1, B2, and C1.`;
+Return ONLY a JSON array with exactly 30 words:
+- 4 A1 words (basic but not obvious)
+- 6 A2 words
+- 8 B1 words
+- 7 B2 words
+- 5 C1 words (sophisticated/literary)
+
+Format: [{"word": "meticulous", "definition": "showing great attention to detail", "level": "B2"}]
+
+Only include words that appear in the story. Each word must be genuinely challenging for its assigned level.`;
 
   try {
     const responseText = await callGemini(prompt);

@@ -204,3 +204,65 @@ export async function generateAllExercises(levelVersions: Record<Level, string>)
 
   return exercises;
 }
+
+export interface VocabularyWord {
+  word: string;
+  definition: string;
+  level: Level;
+}
+
+export async function generateVocabulary(levelVersions: Record<Level, string>): Promise<VocabularyWord[]> {
+  console.log("Generating vocabulary...");
+
+  // Use the C1 version which has the richest vocabulary
+  const c1Text = levelVersions.C1;
+
+  const prompt = `You are an expert ESL vocabulary specialist. Extract 25 vocabulary words from this article that are genuinely worth teaching to language learners.
+
+CRITICAL RULES:
+1. DO NOT include common everyday words that all English speakers know (e.g., "said", "police", "city", "day", "time", "people", "country", "government", "official")
+2. A1 words should be basic but useful verbs/nouns that beginners need (e.g., "arrest", "escape", "danger")
+3. A2 words should be slightly less common (e.g., "witness", "protest", "victim")
+4. B1 words should be intermediate vocabulary (e.g., "investigation", "conflict", "authorities")
+5. B2 words should be sophisticated (e.g., "allegations", "controversy", "jurisdiction")
+6. C1 words should be advanced/formal (e.g., "unprecedented", "deteriorating", "subsequently")
+
+ARTICLE CONTENT:
+${c1Text}
+
+Return ONLY a JSON array with exactly 25 words:
+- 3 A1 words (basic but not obvious)
+- 5 A2 words
+- 7 B1 words
+- 6 B2 words
+- 4 C1 words (sophisticated/formal)
+
+Format: [{"word": "allegations", "definition": "claims that someone has done something wrong", "level": "B2"}]
+
+Only include words that appear in the article. Each word must be genuinely challenging for its assigned level. Do NOT include common words like "police", "city", "people", "country", etc.`;
+
+  const systemPrompt = `You are an ESL vocabulary specialist. Extract genuinely useful vocabulary for language learners. Always return valid JSON only.`;
+
+  try {
+    const response = await generateWithAI(prompt, systemPrompt);
+
+    // Parse JSON from response
+    let vocabulary: VocabularyWord[];
+    try {
+      vocabulary = JSON.parse(response);
+    } catch {
+      const jsonMatch = response.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        vocabulary = JSON.parse(jsonMatch[0]);
+      } else {
+        throw new Error("Failed to parse vocabulary JSON");
+      }
+    }
+
+    console.log(`✓ Generated ${vocabulary.length} vocabulary words`);
+    return vocabulary;
+  } catch (error) {
+    console.error("Failed to generate vocabulary:", error);
+    return []; // Return empty array on failure
+  }
+}
