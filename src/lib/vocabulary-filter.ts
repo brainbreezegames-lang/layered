@@ -268,9 +268,10 @@ export function filterVocabularyForLevel<T extends VocabInput>(
     const wordLevel = item.level;
     const wordLevelIndex = levels.indexOf(wordLevel);
 
-    // Show ONLY words exactly at the user's level
-    // (Since each level now has unique non-overlapping words)
-    if (wordLevelIndex !== userLevelIndex) {
+    // Show words AT or ABOVE the user's level
+    // e.g., A2 users see A2, B1, B2, C1 words
+    // This provides appropriate challenge without overwhelming
+    if (wordLevelIndex < userLevelIndex) {
       return false;
     }
 

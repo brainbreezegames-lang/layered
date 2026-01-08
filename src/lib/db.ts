@@ -141,6 +141,8 @@ export const db = {
         heroImage: string;
         heroAlt: string;
         content: Record<string, string>;
+        titles: Record<string, string>;
+        subtitles: Record<string, string>;
       }>;
     }): Promise<ArticleRow> {
       const { data: result, error } = await supabaseAdmin
