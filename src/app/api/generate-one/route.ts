@@ -18,9 +18,7 @@ export async function POST() {
     }
 
     // Check database for existing
-    const existingArticles = await db.article.findMany({
-      select: { sourceUrl: true },
-    });
+    const existingArticles = await db.article.findMany();
     const existingUrls = new Set(existingArticles.map(a => a.sourceUrl));
 
     // Find first new article

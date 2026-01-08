@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { getFullArticle, NewsItem } from "./fetch-news";
-import { generateAllLevels, generateAllExercises, generateVocabulary } from "./ai-generate";
+import { generateAllLevels, generateAllExercises, generateVocabulary, generateLevelHeadlines } from "./ai-generate";
 import { getArticleImage } from "./image-search";
 import { Level } from "@/types";
 
@@ -26,8 +26,13 @@ export async function processArticle(newsItem: NewsItem) {
 
   // Get full article text
   const fullArticle = await getFullArticle(newsItem.link);
-  if (!fullArticle || fullArticle.textContent.length < 300) {
-    console.log("Article too short or failed to extract, skipping");
+  if (!fullArticle) {
+    console.log(`⚠️  Failed to extract article from ${newsItem.link} - skipping`);
+    return null;
+  }
+
+  if (fullArticle.textContent.length < 300) {
+    console.log(`⚠️  Article too short (${fullArticle.textContent.length} chars): "${newsItem.title}" - skipping`);
     return null;
   }
 
@@ -35,9 +40,10 @@ export async function processArticle(newsItem: NewsItem) {
   console.log("Generating level versions...");
   const levelVersions = await generateAllLevels(fullArticle.textContent);
 
-  // Generate exercises and vocabulary in parallel
-  console.log("Generating exercises and vocabulary...");
-  const [exercises, vocabulary] = await Promise.all([
+  // Generate headlines, exercises, and vocabulary in parallel
+  console.log("Generating headlines, exercises, and vocabulary...");
+  const [headlines, exercises, vocabulary] = await Promise.all([
+    generateLevelHeadlines(newsItem.title, newsItem.description || "", levelVersions),
     generateAllExercises(levelVersions),
     generateVocabulary(levelVersions),
   ]);
@@ -61,6 +67,8 @@ export async function processArticle(newsItem: NewsItem) {
       slug: generateSlug(newsItem.title),
       title: newsItem.title,
       subtitle: newsItem.description,
+      titles: headlines.titles as Record<string, string>,
+      subtitles: headlines.subtitles as Record<string, string>,
       category: newsItem.category,
       source: newsItem.source,
       sourceUrl: newsItem.link,

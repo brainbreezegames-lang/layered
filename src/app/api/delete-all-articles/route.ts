@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 export async function POST() {
   try {
-    const result = await db.article.deleteMany({});
+    const result = await db.article.deleteMany();
 
     return NextResponse.json({
       success: true,

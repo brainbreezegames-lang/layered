@@ -238,13 +238,35 @@ IMPORTANT: Return ONLY valid JSON, no other text. Make exercises appropriate for
   const response = await generateWithAI(prompt, systemPrompt);
 
   try {
-    return JSON.parse(response);
-  } catch {
+    const parsed = JSON.parse(response);
+
+    // Validate exercise structure
+    const required = ['comprehension', 'vocabularyMatching', 'gapFill', 'wordOrder', 'trueFalse', 'discussion'];
+    const missing = required.filter(key => !(key in parsed));
+
+    if (missing.length > 0) {
+      throw new Error(`Missing exercise types: ${missing.join(', ')}`);
+    }
+
+    return parsed;
+  } catch (error) {
+    // Try to extract JSON if there's extra text
     const jsonMatch = response.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
+      const parsed = JSON.parse(jsonMatch[0]);
+
+      // Validate extracted JSON too
+      const required = ['comprehension', 'vocabularyMatching', 'gapFill', 'wordOrder', 'trueFalse', 'discussion'];
+      const missing = required.filter(key => !(key in parsed));
+
+      if (missing.length > 0) {
+        throw new Error(`Extracted JSON missing exercise types: ${missing.join(', ')}`);
+      }
+
+      return parsed;
     }
-    throw new Error("Failed to parse exercises JSON");
+
+    throw new Error(`Failed to parse exercises JSON: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -335,6 +357,8 @@ IMPORTANT: Each word must be unique to ONE level. No word should appear twice in
     return vocabulary;
   } catch (error) {
     console.error("Failed to generate vocabulary:", error);
-    return []; // Return empty array on failure
+    // Throw error instead of silently returning empty array
+    // This will cause processArticle to fail rather than create incomplete content
+    throw new Error(`Vocabulary generation failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 }

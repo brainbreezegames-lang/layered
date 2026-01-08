@@ -4,6 +4,8 @@ type ArticleCreateInput = {
   slug: string;
   title: string;
   subtitle?: string | null;
+  titles?: Record<string, string> | null;
+  subtitles?: Record<string, string> | null;
   category: string;
   source: string;
   sourceUrl: string;
@@ -46,6 +48,8 @@ export const db = {
         slug: data.slug,
         title: data.title,
         subtitle: data.subtitle || null,
+        titles: data.titles || null,
+        subtitles: data.subtitles || null,
         category: data.category,
         source: data.source,
         sourceUrl: data.sourceUrl,
@@ -163,7 +167,13 @@ export const db = {
     },
 
     async deleteMany(): Promise<{ count: number }> {
-      const { data, error } = await supabaseAdmin
+      // First, get count of all articles
+      const { count: totalCount } = await supabaseAdmin
+        .from("Article")
+        .select("*", { count: "exact", head: true });
+
+      // Then delete all
+      const { error } = await supabaseAdmin
         .from("Article")
         .delete()
         .neq("id", ""); // Delete all rows
@@ -172,7 +182,7 @@ export const db = {
         throw new Error(`Failed to delete articles: ${error.message}`);
       }
 
-      return { count: Array.isArray(data) ? data.length : 0 };
+      return { count: totalCount || 0 };
     },
   },
 };

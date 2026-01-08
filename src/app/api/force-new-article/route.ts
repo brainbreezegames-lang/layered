@@ -14,9 +14,7 @@ export async function POST() {
     console.log(`Found ${allNews.length} articles from RSS`);
 
     // Check database
-    const existingArticles = await db.article.findMany({
-      select: { sourceUrl: true, title: true },
-    });
+    const existingArticles = await db.article.findMany();
     console.log(`Database has ${existingArticles.length} articles`);
 
     const existingUrls = new Set(existingArticles.map(a => a.sourceUrl));
