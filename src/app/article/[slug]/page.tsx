@@ -133,7 +133,11 @@ export default function ArticlePage({
 
   // Use level-specific title and subtitle if available, otherwise fall back to original
   const displayTitle = displayArticle.titles?.[level] || displayArticle.title;
-  const displaySubtitle = displayArticle.subtitles?.[level] || displayArticle.subtitle;
+  const rawSubtitle = displayArticle.subtitles?.[level] || displayArticle.subtitle || "";
+  // Truncate subtitle to 120 chars
+  const displaySubtitle = rawSubtitle.length > 120
+    ? rawSubtitle.slice(0, 120).replace(/\s+\S*$/, "") + "..."
+    : rawSubtitle;
 
   return (
     <article className="min-h-screen bg-[var(--color-cream)] pb-24 md:pb-12">
