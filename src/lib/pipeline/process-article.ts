@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { getFullArticle, NewsItem } from "./fetch-news";
-import { generateAllLevels, generateAllExercises, generateVocabulary, generateLevelHeadlines } from "./ai-generate";
+import { generateAllLevels, generateAllExercises, generateVocabulary } from "./ai-generate";
 import { getArticleImage } from "./image-search";
 import { Level } from "@/types";
 
@@ -40,10 +40,9 @@ export async function processArticle(newsItem: NewsItem) {
   console.log("Generating level versions...");
   const levelVersions = await generateAllLevels(fullArticle.textContent);
 
-  // Generate headlines, exercises, and vocabulary in parallel
-  console.log("Generating headlines, exercises, and vocabulary...");
-  const [headlines, exercises, vocabulary] = await Promise.all([
-    generateLevelHeadlines(newsItem.title, newsItem.description || "", levelVersions),
+  // Generate exercises and vocabulary in parallel
+  console.log("Generating exercises and vocabulary...");
+  const [exercises, vocabulary] = await Promise.all([
     generateAllExercises(levelVersions),
     generateVocabulary(levelVersions),
   ]);
@@ -67,8 +66,6 @@ export async function processArticle(newsItem: NewsItem) {
       slug: generateSlug(newsItem.title),
       title: newsItem.title,
       subtitle: newsItem.description,
-      titles: headlines.titles as Record<string, string>,
-      subtitles: headlines.subtitles as Record<string, string>,
       category: newsItem.category,
       source: newsItem.source,
       sourceUrl: newsItem.link,
