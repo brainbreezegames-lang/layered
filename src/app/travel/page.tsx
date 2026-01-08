@@ -25,21 +25,13 @@ interface TravelPhrase {
 }
 
 const regions = [
-  { id: "all", label: "All" },
+  { id: "all", label: "All Destinations" },
   { id: "europe", label: "Europe" },
   { id: "asia", label: "Asia" },
   { id: "americas", label: "Americas" },
   { id: "africa", label: "Africa" },
   { id: "oceania", label: "Oceania" },
 ];
-
-const regionColors: Record<string, string> = {
-  europe: "bg-blue-100 text-blue-800",
-  asia: "bg-rose-100 text-rose-800",
-  americas: "bg-amber-100 text-amber-800",
-  africa: "bg-orange-100 text-orange-800",
-  oceania: "bg-teal-100 text-teal-800",
-};
 
 export default function TravelPage() {
   const [activeRegion, setActiveRegion] = useState("all");
@@ -77,33 +69,31 @@ export default function TravelPage() {
   }, [activeRegion]);
 
   return (
-    <div className="min-h-screen bg-cream">
-      {/* Hero */}
-      <section className="pt-8 pb-6 md:pt-12 md:pb-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="font-display text-3xl md:text-5xl font-medium text-center text-gray-900">
-            Travel English
+    <div className="min-h-screen bg-[var(--color-cream)]">
+      {/* Editorial Header */}
+      <header className="border-b border-[var(--color-border)]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
+          <p className="editorial-subhead mb-3">Travel English</p>
+          <h1 className="editorial-headline text-4xl md:text-5xl lg:text-6xl text-[var(--color-text)]">
+            Discover the World
           </h1>
-          <p className="text-center text-muted mt-2 md:mt-3 text-sm md:text-base">
-            Explore the world while learning English
+          <p className="mt-4 text-[var(--color-text-soft)] text-lg md:text-xl max-w-2xl leading-relaxed">
+            Explore destinations and learn the language you need for your next journey.
           </p>
         </div>
-      </section>
+      </header>
 
-      {/* Region Filter */}
-      <nav className="sticky top-14 md:top-16 z-40 bg-cream border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex gap-1 overflow-x-auto py-3 -mx-4 px-4 scrollbar-hide">
+      {/* Region Filter - Editorial tabs */}
+      <nav className="sticky top-14 md:top-16 z-40 bg-[var(--color-cream)] border-b border-[var(--color-border)]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex gap-6 overflow-x-auto py-0 -mx-4 px-4 scrollbar-hide">
             {regions.map((region) => (
               <button
                 key={region.id}
                 onClick={() => setActiveRegion(region.id)}
-                className={
-                  "px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all " +
-                  (activeRegion === region.id
-                    ? "bg-forest text-white"
-                    : "bg-cream-warm text-muted hover:bg-gray-200")
-                }
+                className={`nav-tab whitespace-nowrap ${
+                  activeRegion === region.id ? "active" : ""
+                }`}
               >
                 {region.label}
               </button>
@@ -112,32 +102,35 @@ export default function TravelPage() {
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
         {/* Travel Phrases Section */}
         {activeRegion === "all" && phrases.length > 0 && (
-          <section className="mb-12">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="font-display text-xl md:text-2xl font-medium text-gray-900">
-                Travel Phrases
-              </h2>
+          <section className="mb-16">
+            <div className="flex items-baseline justify-between mb-6 border-b border-[var(--color-border)] pb-4">
+              <div>
+                <p className="editorial-subhead mb-1">Essential</p>
+                <h2 className="font-display text-2xl md:text-3xl text-[var(--color-text)]">
+                  Travel Phrases
+                </h2>
+              </div>
               <Link
                 href="/travel/phrases"
-                className="text-sm text-forest hover:underline"
+                className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
               >
                 View all
               </Link>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
               {phrases.slice(0, 6).map((phrase) => (
                 <Link
                   key={phrase.id}
                   href={"/travel/phrases/" + phrase.slug}
-                  className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md hover:border-forest/20 transition-all text-center group"
+                  className="editorial-card text-center group hover:border-[var(--color-border-strong)]"
                 >
-                  <span className="text-3xl mb-2 block">
+                  <span className="text-2xl mb-3 block opacity-80 group-hover:opacity-100 transition-opacity">
                     {phrase.icon || "💬"}
                   </span>
-                  <h3 className="font-medium text-gray-900 text-sm group-hover:text-forest transition-colors">
+                  <h3 className="font-display text-base text-[var(--color-text)] group-hover:text-[var(--color-forest)] transition-colors">
                     {phrase.title}
                   </h3>
                 </Link>
@@ -148,111 +141,73 @@ export default function TravelPage() {
 
         {/* Destinations Grid */}
         <section>
-          <h2 className="font-display text-xl md:text-2xl font-medium text-gray-900 mb-6">
-            {activeRegion === "all" ? "Popular Destinations" : regions.find(r => r.id === activeRegion)?.label + " Destinations"}
-          </h2>
+          <div className="mb-8 border-b border-[var(--color-border)] pb-4">
+            <p className="editorial-subhead mb-1">
+              {activeRegion === "all" ? "Featured" : regions.find(r => r.id === activeRegion)?.label}
+            </p>
+            <h2 className="font-display text-2xl md:text-3xl text-[var(--color-text)]">
+              Destinations
+            </h2>
+          </div>
 
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="article-card animate-pulse">
-                  <div className="aspect-[4/3] bg-cream-warm" />
-                  <div className="p-4">
-                    <div className="h-5 bg-cream-warm rounded w-3/4 mb-2" />
-                    <div className="h-4 bg-cream-warm rounded w-full" />
-                  </div>
+                <div key={i} className="animate-pulse">
+                  <div className="aspect-[4/3] bg-[var(--color-warm)] rounded-md mb-4" />
+                  <div className="h-5 bg-[var(--color-warm)] rounded w-2/3 mb-2" />
+                  <div className="h-4 bg-[var(--color-warm)] rounded w-1/3" />
                 </div>
               ))}
             </div>
           ) : destinations.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-mint-light flex items-center justify-center">
-                <svg
-                  className="w-10 h-10 text-forest"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-              <h2 className="font-display text-2xl font-medium text-gray-900 mb-3">
-                No Destinations Found
-              </h2>
-              <p className="text-muted max-w-md mx-auto">
-                No travel destinations available in this region yet.
+            <div className="text-center py-20">
+              <p className="editorial-subhead mb-2">No destinations found</p>
+              <p className="text-[var(--color-text-muted)]">
+                Check back soon for new travel content.
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
               {destinations.map((dest, index) => (
                 <Link
                   key={dest.id}
                   href={"/travel/" + dest.slug}
-                  className="article-card group animate-fade-in-up opacity-0"
+                  className="group animate-fade-in-up opacity-0"
                   style={{
-                    animationDelay: index * 0.1 + "s",
+                    animationDelay: index * 0.08 + "s",
                     animationFillMode: "forwards",
                   }}
                 >
-                  <div className="relative aspect-[4/3] overflow-hidden">
+                  <div className="relative aspect-[4/3] overflow-hidden rounded-md mb-4">
                     {dest.heroImage ? (
                       <Image
                         src={dest.heroImage}
                         alt={dest.name}
                         fill
-                        className="object-cover transition-transform duration-500 group-hover:scale-105"
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        className="object-cover transition-transform duration-700 group-hover:scale-105"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                       />
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-forest/20 to-mint-light flex items-center justify-center">
-                        <svg
-                          className="w-16 h-16 text-forest/40"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={1}
-                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={1}
-                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
-                        </svg>
+                      <div className="w-full h-full bg-gradient-to-br from-[var(--color-warm)] to-[var(--color-cream-dark)] flex items-center justify-center">
+                        <span className="text-4xl opacity-30">🌍</span>
                       </div>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                    <span
-                      className={
-                        "absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-medium " +
-                        (regionColors[dest.region] || "bg-gray-100 text-gray-800")
-                      }
-                    >
-                      {dest.region.charAt(0).toUpperCase() + dest.region.slice(1)}
-                    </span>
                   </div>
-                  <div className="p-4">
-                    <h3 className="font-display text-lg font-medium text-gray-900 group-hover:text-forest transition-colors">
-                      {dest.name}
-                    </h3>
-                    <p className="text-sm text-muted mt-1">{dest.country}</p>
-                    {dest.description && (
-                      <p className="text-sm text-muted mt-2 line-clamp-2">
-                        {dest.description}
-                      </p>
-                    )}
-                  </div>
+                  <p className="category-tag mb-1">
+                    {dest.region}
+                  </p>
+                  <h3 className="font-display text-xl md:text-2xl text-[var(--color-text)] group-hover:text-[var(--color-forest)] transition-colors leading-tight">
+                    {dest.name}
+                  </h3>
+                  <p className="text-[var(--color-text-muted)] mt-1">
+                    {dest.country}
+                  </p>
+                  {dest.description && (
+                    <p className="text-[var(--color-text-soft)] mt-2 text-sm line-clamp-2 leading-relaxed">
+                      {dest.description}
+                    </p>
+                  )}
                 </Link>
               ))}
             </div>

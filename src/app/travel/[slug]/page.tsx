@@ -28,12 +28,12 @@ interface Destination {
 const sectionIcons: Record<string, string> = {
   "get-in": "✈️",
   "get-around": "🚇",
-  see: "👀",
+  see: "👁️",
   eat: "🍽️",
   sleep: "🏨",
   tips: "💡",
   buy: "🛍️",
-  drink: "🍺",
+  drink: "🍷",
   do: "🎯",
 };
 
@@ -70,22 +70,25 @@ export default function DestinationPage({
     fetchDestination();
   }, [slug]);
 
+  const handleLevelChange = (newLevel: string) => {
+    setLevel(newLevel);
+    localStorage.setItem("selectedLevel", newLevel);
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-cream flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-2 border-forest border-t-transparent rounded-full" />
+      <div className="min-h-screen bg-[var(--color-cream)] flex items-center justify-center">
+        <div className="animate-spin w-6 h-6 border-2 border-[var(--color-text)] border-t-transparent rounded-full" />
       </div>
     );
   }
 
   if (!destination) {
     return (
-      <div className="min-h-screen bg-cream flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--color-cream)] flex items-center justify-center">
         <div className="text-center">
-          <h1 className="font-display text-2xl font-medium mb-2">
-            Destination Not Found
-          </h1>
-          <Link href="/travel" className="text-forest hover:underline">
+          <h1 className="font-display text-2xl mb-3">Destination Not Found</h1>
+          <Link href="/travel" className="text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors">
             Back to Travel
           </Link>
         </div>
@@ -94,9 +97,9 @@ export default function DestinationPage({
   }
 
   return (
-    <div className="min-h-screen bg-cream">
+    <div className="min-h-screen bg-[var(--color-cream)]">
       {/* Hero */}
-      <div className="relative w-full aspect-[16/9] md:aspect-[21/9]">
+      <div className="relative w-full aspect-[16/9] md:aspect-[21/9] lg:aspect-[3/1]">
         {destination.heroImage ? (
           <Image
             src={destination.heroImage}
@@ -107,65 +110,57 @@ export default function DestinationPage({
             sizes="100vw"
           />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-forest/40 via-forest/20 to-mint-light" />
+          <div className="w-full h-full bg-gradient-to-br from-[var(--color-warm)] via-[var(--color-cream-dark)] to-[var(--color-warm)]" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
 
-        <div className="absolute bottom-0 left-0 right-0 p-4 md:p-8 lg:p-12">
+        <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 lg:p-14">
           <div className="max-w-4xl">
             <Link
               href="/travel"
-              className="inline-flex items-center gap-2 text-white/80 hover:text-white text-sm mb-3 transition-colors"
+              className="inline-flex items-center gap-2 text-white/70 hover:text-white text-sm mb-4 transition-colors"
             >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
-                />
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
               </svg>
-              Back to Travel
+              Travel
             </Link>
-            <h1 className="font-display text-3xl md:text-5xl lg:text-6xl font-medium text-white leading-tight">
+            <p className="text-white/60 text-sm uppercase tracking-wider mb-2">
+              {destination.region}
+            </p>
+            <h1 className="editorial-headline text-4xl md:text-5xl lg:text-6xl text-white">
               {destination.name}
             </h1>
-            <p className="mt-2 text-white/80 text-lg md:text-xl">
+            <p className="mt-2 text-white/80 text-lg">
               {destination.country}
             </p>
-            {destination.description && (
-              <p className="mt-3 text-white/70 text-sm md:text-base max-w-2xl">
-                {destination.description}
-              </p>
-            )}
           </div>
         </div>
       </div>
 
-      {/* Sections */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="font-display text-xl md:text-2xl font-medium text-gray-900">
-            Sections
-          </h2>
-          <div className="flex gap-1">
+      {/* Content */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
+        {/* Description */}
+        {destination.description && (
+          <p className="text-[var(--color-text-soft)] text-lg md:text-xl leading-relaxed mb-10 pb-10 border-b border-[var(--color-border)]">
+            {destination.description}
+          </p>
+        )}
+
+        {/* Level Selector */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <p className="editorial-subhead mb-1">Reading Level</p>
+            <p className="text-sm text-[var(--color-text-muted)]">
+              Choose your preferred difficulty
+            </p>
+          </div>
+          <div className="level-selector">
             {levels.map((l) => (
               <button
                 key={l}
-                onClick={() => {
-                  setLevel(l);
-                  localStorage.setItem("selectedLevel", l);
-                }}
-                className={`px-2 py-1 rounded text-xs font-medium transition-all ${
-                  level === l
-                    ? "bg-forest text-white"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                }`}
+                onClick={() => handleLevelChange(l)}
+                className={`level-btn ${level === l ? "active" : ""}`}
               >
                 {l}
               </button>
@@ -173,57 +168,68 @@ export default function DestinationPage({
           </div>
         </div>
 
-        {destination.sections.length === 0 ? (
-          <p className="text-center text-muted py-12">
-            No sections available yet.
-          </p>
-        ) : (
-          <div className="space-y-3">
-            {destination.sections.map((section) => (
-              <Link
-                key={section.id}
-                href={"/travel/" + destination.slug + "/" + section.slug}
-                className="flex items-center gap-4 p-4 bg-white rounded-xl border border-gray-100 hover:border-forest/30 hover:shadow-md transition-all group"
-              >
-                <span className="text-2xl">
-                  {sectionIcons[section.sectionType] || "📍"}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-medium text-gray-900 group-hover:text-forest transition-colors">
-                    {section.title}
-                  </h3>
-                  <div className="flex items-center gap-3 mt-1 text-xs text-muted">
-                    <span>
-                      {section.wordCounts?.[level] ||
-                        section.wordCounts?.B1 ||
-                        "—"}{" "}
-                      words
-                    </span>
-                    <span>
-                      {section.readTimes?.[level] ||
-                        section.readTimes?.B1 ||
-                        "—"}{" "}
-                      min
-                    </span>
-                  </div>
-                </div>
-                <svg
-                  className="w-5 h-5 text-gray-400 group-hover:text-forest transition-colors"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-              </Link>
-            ))}
+        {/* Sections */}
+        <section>
+          <div className="mb-6 border-b border-[var(--color-border)] pb-4">
+            <p className="editorial-subhead mb-1">Guide</p>
+            <h2 className="font-display text-2xl text-[var(--color-text)]">
+              Sections
+            </h2>
           </div>
-        )}
+
+          {destination.sections.length === 0 ? (
+            <p className="text-center text-[var(--color-text-muted)] py-12">
+              No sections available yet.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {destination.sections.map((section, index) => (
+                <Link
+                  key={section.id}
+                  href={"/travel/" + destination.slug + "/" + section.slug}
+                  className="flex items-center gap-5 p-5 bg-white border border-[var(--color-border)] rounded-lg hover:border-[var(--color-border-strong)] hover:shadow-sm transition-all group"
+                >
+                  <span className="text-2xl opacity-70 group-hover:opacity-100 transition-opacity">
+                    {sectionIcons[section.sectionType] || "📍"}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs text-[var(--color-text-muted)]">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                    </div>
+                    <h3 className="font-display text-lg text-[var(--color-text)] group-hover:text-[var(--color-forest)] transition-colors">
+                      {section.title}
+                    </h3>
+                    <div className="flex items-center gap-4 mt-1 text-sm text-[var(--color-text-muted)]">
+                      <span>
+                        {section.wordCounts?.[level] || section.wordCounts?.B1 || "—"} words
+                      </span>
+                      <span>
+                        {section.readTimes?.[level] || section.readTimes?.B1 || "—"} min read
+                      </span>
+                    </div>
+                  </div>
+                  <svg
+                    className="w-5 h-5 text-[var(--color-text-muted)] group-hover:text-[var(--color-text)] transition-colors"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Source attribution */}
+        <div className="mt-12 pt-8 border-t border-[var(--color-border)]">
+          <p className="text-xs text-[var(--color-text-muted)]">
+            Content adapted from Wikivoyage under CC BY-SA license
+          </p>
+        </div>
       </div>
     </div>
   );

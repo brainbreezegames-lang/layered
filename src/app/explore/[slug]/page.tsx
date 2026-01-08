@@ -22,14 +22,6 @@ interface ExploreArticle {
 
 const levels = ["A1", "A2", "B1", "B2", "C1"];
 
-const categoryColors: Record<string, string> = {
-  people: "bg-purple-100 text-purple-800",
-  places: "bg-blue-100 text-blue-800",
-  science: "bg-emerald-100 text-emerald-800",
-  history: "bg-amber-100 text-amber-800",
-  culture: "bg-rose-100 text-rose-800",
-};
-
 export default function ExploreArticlePage({
   params,
 }: {
@@ -134,20 +126,18 @@ export default function ExploreArticlePage({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-cream flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-2 border-forest border-t-transparent rounded-full" />
+      <div className="min-h-screen bg-[var(--color-cream)] flex items-center justify-center">
+        <div className="animate-spin w-6 h-6 border-2 border-[var(--color-text)] border-t-transparent rounded-full" />
       </div>
     );
   }
 
   if (!article) {
     return (
-      <div className="min-h-screen bg-cream flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--color-cream)] flex items-center justify-center">
         <div className="text-center">
-          <h1 className="font-display text-2xl font-medium mb-2">
-            Article Not Found
-          </h1>
-          <Link href="/explore" className="text-forest hover:underline">
+          <h1 className="font-display text-2xl mb-3">Article Not Found</h1>
+          <Link href="/explore" className="text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors">
             Back to Explore
           </Link>
         </div>
@@ -155,40 +145,29 @@ export default function ExploreArticlePage({
     );
   }
 
-  const content =
-    article.content?.[level] || "Content not available for this level.";
+  const content = article.content?.[level] || "Content not available for this level.";
   const exercises = article.exercises?.[level] || {};
   const vocab = getVocabularyForLevel();
 
   return (
-    <article className="min-h-screen bg-cream pb-24 md:pb-12">
-      {/* Back button - Mobile */}
-      <div className="md:hidden sticky top-14 z-30 bg-cream/95 backdrop-blur-sm border-b border-gray-100">
+    <article className="min-h-screen bg-[var(--color-cream)] pb-24 md:pb-12">
+      {/* Mobile back button */}
+      <div className="md:hidden sticky top-14 z-30 bg-[var(--color-cream)]/95 backdrop-blur-sm border-b border-[var(--color-border)]">
         <div className="px-4 py-3">
           <Link
             href="/explore"
-            className="inline-flex items-center gap-2 text-sm text-muted hover:text-forest transition-colors"
+            className="inline-flex items-center gap-2 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
           >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
             </svg>
-            Back to Explore
+            Explore
           </Link>
         </div>
       </div>
 
       {/* Hero Image */}
-      <div className="relative w-full aspect-[16/9] md:aspect-[21/9]">
+      <div className="relative w-full aspect-[16/9] md:aspect-[21/9] lg:aspect-[3/1]">
         {article.heroImage ? (
           <Image
             src={article.heroImage}
@@ -199,25 +178,29 @@ export default function ExploreArticlePage({
             sizes="100vw"
           />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-forest/40 via-forest/20 to-mint-light" />
+          <div className="w-full h-full bg-gradient-to-br from-[var(--color-warm)] via-[var(--color-cream-dark)] to-[var(--color-warm)]" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
 
-        <div className="absolute bottom-0 left-0 right-0 p-4 md:p-8 lg:p-12">
+        <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 lg:p-14">
           <div className="max-w-4xl">
-            <span
-              className={`inline-block px-3 py-1 rounded-full text-xs font-medium mb-3 ${
-                categoryColors[article.category] || "bg-gray-100 text-gray-800"
-              }`}
+            <Link
+              href="/explore"
+              className="hidden md:inline-flex items-center gap-2 text-white/70 hover:text-white text-sm mb-4 transition-colors"
             >
-              {article.category.charAt(0).toUpperCase() +
-                article.category.slice(1)}
-            </span>
-            <h1 className="font-display text-2xl md:text-4xl lg:text-5xl font-medium text-white leading-tight">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
+              </svg>
+              Explore
+            </Link>
+            <p className="text-white/60 text-sm uppercase tracking-wider mb-2">
+              {article.category}
+            </p>
+            <h1 className="editorial-headline text-3xl md:text-4xl lg:text-5xl text-white leading-tight">
               {article.title}
             </h1>
             {article.excerpt && (
-              <p className="mt-2 text-white/80 text-sm md:text-lg max-w-2xl">
+              <p className="mt-3 text-white/80 text-lg max-w-2xl leading-relaxed">
                 {article.excerpt}
               </p>
             )}
@@ -226,112 +209,78 @@ export default function ExploreArticlePage({
       </div>
 
       {/* Main content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
-        <div className="md:grid md:grid-cols-12 md:gap-8 lg:gap-12">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        <div className="lg:grid lg:grid-cols-12 lg:gap-12">
           {/* Sidebar */}
-          <div className="md:col-span-4 lg:col-span-3 mb-6 md:mb-0">
-            <div className="md:sticky md:top-24 space-y-4">
-              <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-                {/* Level selector */}
-                <div className="mb-4">
-                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
-                    Reading Level
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {levels.map((l) => (
-                      <button
-                        key={l}
-                        onClick={() => handleLevelChange(l)}
-                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                          level === l
-                            ? "bg-forest text-white"
-                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                        }`}
-                      >
-                        {l}
-                      </button>
-                    ))}
-                  </div>
+          <aside className="lg:col-span-3 mb-8 lg:mb-0">
+            <div className="lg:sticky lg:top-24 space-y-6">
+              {/* Level selector */}
+              <div className="p-5 bg-white border border-[var(--color-border)] rounded-lg">
+                <p className="editorial-subhead mb-3">Reading Level</p>
+                <div className="level-selector w-full">
+                  {levels.map((l) => (
+                    <button
+                      key={l}
+                      onClick={() => handleLevelChange(l)}
+                      className={`level-btn flex-1 ${level === l ? "active" : ""}`}
+                    >
+                      {l}
+                    </button>
+                  ))}
                 </div>
 
-                {/* Stats */}
-                <div className="flex items-center gap-4 py-3 border-t border-gray-100">
+                <div className="flex items-center gap-6 mt-4 pt-4 border-t border-[var(--color-border)]">
                   <div>
-                    <p className="text-xs text-gray-500">Words</p>
-                    <p className="font-medium text-forest">
+                    <p className="text-xs text-[var(--color-text-muted)]">Words</p>
+                    <p className="font-display text-lg text-[var(--color-text)]">
                       {article.wordCounts?.[level] || "—"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500">Read time</p>
-                    <p className="font-medium text-forest">
+                    <p className="text-xs text-[var(--color-text-muted)]">Read time</p>
+                    <p className="font-display text-lg text-[var(--color-text)]">
                       {article.readTimes?.[level] || "—"} min
                     </p>
                   </div>
                 </div>
-
-                {/* Source */}
-                <div className="pt-3 border-t border-gray-100">
-                  <p className="text-xs text-gray-500 mb-1">Source</p>
-                  <a
-                    href={`https://simple.wikipedia.org/wiki/${encodeURIComponent(
-                      article.wikiTitle
-                    )}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-forest hover:underline"
-                  >
-                    Simple Wikipedia
-                  </a>
-                  <p className="text-xs text-gray-500 mt-1">CC BY-SA</p>
-                </div>
               </div>
 
               {/* Audio Player */}
-              <div className="hidden md:block">
+              <div className="hidden lg:block">
                 <TTSPlayer text={content} level={level} />
               </div>
 
-              {/* Back link */}
-              <div className="hidden md:block">
-                <Link
-                  href="/explore"
-                  className="inline-flex items-center gap-2 text-sm text-muted hover:text-forest transition-colors"
+              {/* Source */}
+              <div className="hidden lg:block p-4 bg-white border border-[var(--color-border)] rounded-lg">
+                <p className="editorial-subhead mb-2">Source</p>
+                <a
+                  href={`https://simple.wikipedia.org/wiki/${encodeURIComponent(article.wikiTitle)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-[var(--color-text)] hover:text-[var(--color-forest)] transition-colors"
                 >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 19l-7-7 7-7"
-                    />
-                  </svg>
-                  Back to Explore
-                </Link>
+                  Simple Wikipedia
+                </a>
+                <p className="text-xs text-[var(--color-text-muted)] mt-1">CC BY-SA</p>
               </div>
             </div>
-          </div>
+          </aside>
 
           {/* Content */}
-          <div className="md:col-span-8 lg:col-span-9">
-            {/* Audio Player - Mobile */}
-            <div className="md:hidden mb-6">
+          <div className="lg:col-span-9">
+            {/* Mobile Audio Player */}
+            <div className="lg:hidden mb-8">
               <TTSPlayer text={content} level={level} />
             </div>
 
             {/* Content text with vocabulary highlighting */}
-            <div className="prose prose-lg max-w-none mb-10">
+            <div className="prose prose-lg max-w-none mb-12">
               {content.split("\n\n").map((para, paraIndex) => {
                 const parts = highlightVocabulary(para, vocab);
                 return (
                   <p
                     key={paraIndex}
-                    className="mb-5 text-gray-800 leading-relaxed text-lg first-letter:text-4xl first-letter:font-display first-letter:font-medium first-letter:mr-1 first-letter:float-left first-letter:leading-none"
+                    className="mb-6 text-[var(--color-text)] leading-[1.85] text-lg md:text-xl first:first-letter:float-left first:first-letter:font-display first:first-letter:text-5xl first:first-letter:pr-3 first:first-letter:pt-1 first:first-letter:leading-none first:first-letter:text-[var(--color-forest)]"
                   >
                     {Array.isArray(parts)
                       ? parts.map((part, i) =>
@@ -345,19 +294,19 @@ export default function ExploreArticlePage({
                                       : `${paraIndex}-${i}`
                                   )
                                 }
-                                className="vocabulary-word bg-gradient-to-b from-transparent via-transparent to-mint-light/60 hover:to-mint-light transition-colors cursor-help"
+                                className="border-b-2 border-[var(--color-gold)]/40 hover:border-[var(--color-gold)] transition-colors cursor-help"
                               >
                                 {part.text}
                               </button>
                               {activeTooltip === `${paraIndex}-${i}` && (
-                                <span className="absolute left-0 bottom-full mb-2 z-50 w-64 p-3 bg-forest text-white text-sm rounded-lg shadow-lg">
-                                  <span className="block font-serif text-lg mb-1">
+                                <span className="absolute left-0 bottom-full mb-2 z-50 w-64 p-4 bg-[var(--color-text)] text-white text-sm rounded-lg shadow-xl">
+                                  <span className="block font-display text-lg mb-1">
                                     {part.word.word}
                                   </span>
-                                  <span className="block text-white/90 text-xs">
+                                  <span className="block text-white/80 text-sm leading-relaxed">
                                     {part.word.definition}
                                   </span>
-                                  <span className="block mt-2 text-xs text-mint-light">
+                                  <span className="block mt-2 text-xs text-white/50">
                                     {part.word.level} Level
                                   </span>
                                   <button
@@ -365,20 +314,10 @@ export default function ExploreArticlePage({
                                       e.stopPropagation();
                                       setActiveTooltip(null);
                                     }}
-                                    className="absolute top-1 right-1 p-1 hover:bg-white/10 rounded"
+                                    className="absolute top-2 right-2 p-1 hover:bg-white/10 rounded"
                                   >
-                                    <svg
-                                      className="w-3 h-3"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M6 18L18 6M6 6l12 12"
-                                      />
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                     </svg>
                                   </button>
                                 </span>
@@ -396,74 +335,48 @@ export default function ExploreArticlePage({
 
             {/* Vocabulary */}
             {vocab.length > 0 && (
-              <div className="bg-white rounded-xl p-6 mb-8 border border-gray-100">
-                <h3 className="font-display text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-                  <svg
-                    className="w-5 h-5 text-forest"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                    />
-                  </svg>
-                  Vocabulary
-                </h3>
-                <div className="grid gap-3 sm:grid-cols-2">
+              <section className="mb-12">
+                <div className="mb-6 border-b border-[var(--color-border)] pb-3">
+                  <p className="editorial-subhead mb-1">Key Terms</p>
+                  <h3 className="font-display text-xl text-[var(--color-text)]">Vocabulary</h3>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
                   {vocab.slice(0, 12).map((v, i) => (
                     <div
                       key={i}
-                      className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg"
+                      className="flex items-baseline gap-3 p-4 bg-white border border-[var(--color-border)] rounded-lg"
                     >
-                      <span className="font-medium text-forest shrink-0">
+                      <span className="font-display text-[var(--color-text)] shrink-0">
                         {v.word}
                       </span>
-                      <span className="text-sm text-gray-600">
+                      <span className="text-sm text-[var(--color-text-soft)] leading-relaxed">
                         {v.definition}
                       </span>
-                      <span className="ml-auto text-xs px-1.5 py-0.5 bg-mint-light text-forest rounded shrink-0">
+                      <span className="ml-auto text-xs text-[var(--color-text-muted)] shrink-0">
                         {v.level}
                       </span>
                     </div>
                   ))}
                 </div>
-              </div>
+              </section>
             )}
 
             {/* Exercises */}
             {exercises && Object.keys(exercises).length > 0 && (
-              <div className="bg-white rounded-xl p-6 border border-gray-100">
-                <h3 className="font-display text-lg font-medium text-gray-900 mb-6 flex items-center gap-2">
-                  <svg
-                    className="w-5 h-5 text-forest"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
-                    />
-                  </svg>
-                  Practice Exercises
-                </h3>
+              <section className="mb-12">
+                <div className="mb-6 border-b border-[var(--color-border)] pb-3">
+                  <p className="editorial-subhead mb-1">Practice</p>
+                  <h3 className="font-display text-xl text-[var(--color-text)]">Exercises</h3>
+                </div>
 
                 {/* Comprehension Questions */}
                 {exercises.comprehension && exercises.comprehension.length > 0 && (
-                  <div className="mb-8">
-                    <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">
-                      Comprehension
-                    </h4>
+                  <div className="mb-10">
+                    <h4 className="editorial-subhead mb-4">Comprehension</h4>
                     <div className="space-y-4">
                       {exercises.comprehension.map((q: any, i: number) => (
-                        <div key={i} className="p-4 bg-gray-50 rounded-lg">
-                          <p className="font-medium text-gray-900 mb-3">
+                        <div key={i} className="p-5 bg-white border border-[var(--color-border)] rounded-lg">
+                          <p className="font-display text-[var(--color-text)] mb-4">
                             {i + 1}. {q.question}
                           </p>
                           <div className="space-y-2">
@@ -476,9 +389,9 @@ export default function ExploreArticlePage({
                                 className={`w-full text-left px-4 py-3 rounded-lg border transition-all text-sm ${
                                   answers[`comp-${i}`] === j
                                     ? answers[`comp-${i}`] === q.correct
-                                      ? "border-green-500 bg-green-50 text-green-800"
-                                      : "border-red-500 bg-red-50 text-red-800"
-                                    : "border-gray-200 hover:border-forest bg-white"
+                                      ? "border-green-600 bg-green-50 text-green-800"
+                                      : "border-red-600 bg-red-50 text-red-800"
+                                    : "border-[var(--color-border)] hover:border-[var(--color-border-strong)] bg-white"
                                 }`}
                               >
                                 {opt}
@@ -493,14 +406,12 @@ export default function ExploreArticlePage({
 
                 {/* True or False */}
                 {exercises.trueOrFalse && exercises.trueOrFalse.length > 0 && (
-                  <div className="mb-8">
-                    <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">
-                      True or False
-                    </h4>
+                  <div className="mb-10">
+                    <h4 className="editorial-subhead mb-4">True or False</h4>
                     <div className="space-y-4">
                       {exercises.trueOrFalse.map((q: any, i: number) => (
-                        <div key={i} className="p-4 bg-gray-50 rounded-lg">
-                          <p className="font-medium text-gray-900 mb-3">
+                        <div key={i} className="p-5 bg-white border border-[var(--color-border)] rounded-lg">
+                          <p className="font-display text-[var(--color-text)] mb-4">
                             {q.statement}
                           </p>
                           <div className="flex gap-3">
@@ -516,9 +427,9 @@ export default function ExploreArticlePage({
                                 className={`flex-1 px-4 py-3 rounded-lg border transition-all text-sm font-medium ${
                                   answers[`tf-${i}`] === (j === 0)
                                     ? answers[`tf-${i}`] === q.correct
-                                      ? "border-green-500 bg-green-50 text-green-800"
-                                      : "border-red-500 bg-red-50 text-red-800"
-                                    : "border-gray-200 hover:border-forest bg-white"
+                                      ? "border-green-600 bg-green-50 text-green-800"
+                                      : "border-red-600 bg-red-50 text-red-800"
+                                    : "border-[var(--color-border)] hover:border-[var(--color-border-strong)] bg-white"
                                 }`}
                               >
                                 {opt}
@@ -532,67 +443,74 @@ export default function ExploreArticlePage({
                 )}
 
                 {/* Fill in the Blank */}
-                {exercises.fillInTheBlank &&
-                  exercises.fillInTheBlank.length > 0 && (
-                    <div className="mb-8">
-                      <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">
-                        Fill in the Blank
-                      </h4>
-                      <div className="space-y-4">
-                        {exercises.fillInTheBlank.map((q: any, i: number) => (
-                          <div key={i} className="p-4 bg-gray-50 rounded-lg">
-                            <p className="font-medium text-gray-900 mb-3">
-                              {q.sentence}
-                            </p>
-                            <input
-                              type="text"
-                              placeholder="Your answer..."
-                              onChange={(e) =>
-                                setAnswers({
-                                  ...answers,
-                                  [`fill-${i}`]: e.target.value,
-                                })
-                              }
-                              className={`w-full px-4 py-3 rounded-lg border transition-all text-sm ${
-                                answers[`fill-${i}`]
-                                  ? answers[`fill-${i}`].toLowerCase() ===
-                                    q.answer.toLowerCase()
-                                    ? "border-green-500 bg-green-50"
-                                    : "border-red-500 bg-red-50"
-                                  : "border-gray-200 focus:border-forest bg-white"
-                              }`}
-                            />
-                            {answers[`fill-${i}`] &&
-                              answers[`fill-${i}`].toLowerCase() !==
-                                q.answer.toLowerCase() && (
-                                <p className="mt-2 text-sm text-green-600">
-                                  Correct answer:{" "}
-                                  <span className="font-medium">{q.answer}</span>
-                                </p>
-                              )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                {/* Discussion Questions */}
-                {exercises.discussion && exercises.discussion.length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">
-                      Discussion Questions
-                    </h4>
-                    <div className="space-y-3">
-                      {exercises.discussion.map((q: string, i: number) => (
-                        <div key={i} className="p-4 bg-mint-light/30 rounded-lg">
-                          <p className="text-gray-800">{q}</p>
+                {exercises.fillInTheBlank && exercises.fillInTheBlank.length > 0 && (
+                  <div className="mb-10">
+                    <h4 className="editorial-subhead mb-4">Fill in the Blank</h4>
+                    <div className="space-y-4">
+                      {exercises.fillInTheBlank.map((q: any, i: number) => (
+                        <div key={i} className="p-5 bg-white border border-[var(--color-border)] rounded-lg">
+                          <p className="font-display text-[var(--color-text)] mb-4">
+                            {q.sentence}
+                          </p>
+                          <input
+                            type="text"
+                            placeholder="Your answer..."
+                            onChange={(e) =>
+                              setAnswers({
+                                ...answers,
+                                [`fill-${i}`]: e.target.value,
+                              })
+                            }
+                            className={`w-full px-4 py-3 rounded-lg border transition-all text-sm ${
+                              answers[`fill-${i}`]
+                                ? answers[`fill-${i}`].toLowerCase() ===
+                                  q.answer.toLowerCase()
+                                  ? "border-green-600 bg-green-50"
+                                  : "border-red-600 bg-red-50"
+                                : "border-[var(--color-border)] focus:border-[var(--color-text)] bg-white"
+                            }`}
+                          />
+                          {answers[`fill-${i}`] &&
+                            answers[`fill-${i}`].toLowerCase() !==
+                              q.answer.toLowerCase() && (
+                              <p className="mt-2 text-sm text-green-600">
+                                Correct answer: <span className="font-medium">{q.answer}</span>
+                              </p>
+                            )}
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
-              </div>
+
+                {/* Discussion Questions */}
+                {exercises.discussion && exercises.discussion.length > 0 && (
+                  <div>
+                    <h4 className="editorial-subhead mb-4">Discussion</h4>
+                    <div className="space-y-3">
+                      {exercises.discussion.map((q: string, i: number) => (
+                        <div key={i} className="p-5 bg-[var(--color-warm)] border border-[var(--color-border)] rounded-lg">
+                          <p className="text-[var(--color-text)] leading-relaxed">{q}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </section>
             )}
+
+            {/* Back link */}
+            <div className="pt-8 border-t border-[var(--color-border)]">
+              <Link
+                href="/explore"
+                className="inline-flex items-center gap-2 text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
+                </svg>
+                Back to Explore
+              </Link>
+            </div>
           </div>
         </div>
       </div>
