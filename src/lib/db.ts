@@ -146,6 +146,7 @@ export const db = {
         heroAlt: string;
         titles: Record<string, string>;
         subtitles: Record<string, string>;
+        content: Record<string, string>;
       }>;
     }): Promise<ArticleRow> {
       const { data: result, error } = await supabaseAdmin
@@ -163,6 +164,19 @@ export const db = {
       }
 
       return result as ArticleRow;
+    },
+
+    async deleteMany(): Promise<{ count: number }> {
+      const { data, error } = await supabaseAdmin
+        .from("Article")
+        .delete()
+        .neq("id", ""); // Delete all rows
+
+      if (error) {
+        throw new Error(`Failed to delete articles: ${error.message}`);
+      }
+
+      return { count: Array.isArray(data) ? data.length : 0 };
     },
   },
 };
