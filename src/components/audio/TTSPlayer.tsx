@@ -307,6 +307,13 @@ export function TTSPlayer({ text, level = "B1", className = "" }: TTSPlayerProps
           Generating audio...
         </p>
       )}
+
+      {/* Info text */}
+      {!isLoading && !audioUrl && (
+        <p className="text-center text-xs text-white/40 mt-3">
+          Plays the opening paragraph
+        </p>
+      )}
     </div>
   );
 }
