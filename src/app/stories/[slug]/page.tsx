@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, use, useCallback } from "react";
+import { useState, useEffect, use, useCallback, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { TTSPlayer } from "@/components/audio/TTSPlayer";
+import { SyncedTextReader } from "@/components/audio/SyncedTextReader";
 import { useLevel } from "@/components/LevelContext";
 
 interface Story {
@@ -34,6 +35,12 @@ export default function StoryPage({ params }: { params: Promise<{ slug: string }
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
+  // Synced reading state
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [followAlong, setFollowAlong] = useState(true);
+
   useEffect(() => {
     async function fetchStory() {
       try {
@@ -60,6 +67,20 @@ export default function StoryPage({ params }: { params: Promise<{ slug: string }
     const levelIndex = levels.indexOf(level);
     return story.vocabulary.filter(v => levels.indexOf(v.level) <= levelIndex);
   }, [story, level]);
+
+  // Handle time updates from TTS player
+  const handleTimeUpdate = useCallback((time: number, dur: number) => {
+    setCurrentTime(time);
+    setDuration(dur);
+  }, []);
+
+  // Handle play state changes
+  const handlePlayStateChange = useCallback((playing: boolean) => {
+    setIsPlaying(playing);
+    if (!playing) {
+      setCurrentTime(0);
+    }
+  }, []);
 
   const highlightVocabulary = useCallback((text: string, vocab: { word: string; definition: string; level: string }[]) => {
     if (!vocab || vocab.length === 0) return text;
@@ -241,55 +262,96 @@ export default function StoryPage({ params }: { params: Promise<{ slug: string }
           {/* Content */}
           <div className="lg:col-span-9">
             {/* Audio Player - Inline with content */}
-            <div className="mb-8">
-              <TTSPlayer text={content} level={level} />
+            <div className="mb-6">
+              <TTSPlayer
+                text={content}
+                level={level}
+                onTimeUpdate={handleTimeUpdate}
+                onPlayStateChange={handlePlayStateChange}
+              />
             </div>
 
-            {/* Story text with vocabulary highlighting */}
-            <div className="prose prose-lg max-w-none mb-12">
-              {content.split("\n\n").map((para, paraIndex) => {
-                const parts = highlightVocabulary(para, vocab);
-                return (
-                  <p
-                    key={paraIndex}
-                    className="mb-6 text-[var(--color-text)] leading-[1.85] text-lg md:text-xl first:first-letter:float-left first:first-letter:font-display first:first-letter:text-5xl first:first-letter:pr-3 first:first-letter:pt-1 first:first-letter:leading-none first:first-letter:text-[var(--color-forest)]"
-                  >
-                    {Array.isArray(parts) ? (
-                      parts.map((part, i) =>
-                        part.isVocab && part.word ? (
-                          <span key={i} className="relative">
-                            <button
-                              onClick={() => setActiveTooltip(activeTooltip === `${paraIndex}-${i}` ? null : `${paraIndex}-${i}`)}
-                              className="border-b-2 border-[var(--color-gold)]/40 hover:border-[var(--color-gold)] transition-colors cursor-help"
-                            >
-                              {part.text}
-                            </button>
-                            {activeTooltip === `${paraIndex}-${i}` && (
-                              <span className="absolute left-0 bottom-full mb-2 z-50 w-64 p-4 bg-[var(--color-text)] text-white text-sm rounded-lg shadow-xl">
-                                <span className="block font-display text-lg mb-1">{part.word.word}</span>
-                                <span className="block text-white/80 text-sm leading-relaxed">{part.word.definition}</span>
-                                <span className="block mt-2 text-xs text-white/50">{part.word.level} Level</span>
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); setActiveTooltip(null); }}
-                                  className="absolute top-2 right-2 p-1 hover:bg-white/10 rounded"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                  </svg>
-                                </button>
-                              </span>
-                            )}
-                          </span>
-                        ) : (
-                          <span key={i}>{part.text}</span>
-                        )
-                      )
+            {/* Follow along toggle - only show when audio is available */}
+            {duration > 0 && (
+              <div className="mb-6 flex items-center gap-3">
+                <button
+                  onClick={() => setFollowAlong(!followAlong)}
+                  className={`follow-along-toggle ${followAlong ? "active" : ""}`}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {followAlong ? (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     ) : (
-                      para
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
                     )}
-                  </p>
-                );
-              })}
+                  </svg>
+                  Follow along
+                </button>
+                {isPlaying && followAlong && (
+                  <span className="text-xs text-[var(--color-text-muted)]">
+                    Words highlight as they&apos;re spoken
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Story text - Synced or Regular based on playback state */}
+            <div className={`reading-mode ${isPlaying && followAlong ? "active" : ""}`}>
+              {isPlaying && followAlong && duration > 0 ? (
+                <SyncedTextReader
+                  content={content}
+                  currentTime={currentTime}
+                  duration={duration}
+                  isPlaying={isPlaying}
+                  className="prose prose-lg max-w-none mb-12 text-[var(--color-text)] leading-[1.85] text-lg md:text-xl"
+                />
+              ) : (
+                <div className="prose prose-lg max-w-none mb-12">
+                  {content.split("\n\n").map((para, paraIndex) => {
+                    const parts = highlightVocabulary(para, vocab);
+                    return (
+                      <p
+                        key={paraIndex}
+                        className="mb-6 text-[var(--color-text)] leading-[1.85] text-lg md:text-xl first:first-letter:float-left first:first-letter:font-display first:first-letter:text-5xl first:first-letter:pr-3 first:first-letter:pt-1 first:first-letter:leading-none first:first-letter:text-[var(--color-forest)]"
+                      >
+                        {Array.isArray(parts) ? (
+                          parts.map((part, i) =>
+                            part.isVocab && part.word ? (
+                              <span key={i} className="relative">
+                                <button
+                                  onClick={() => setActiveTooltip(activeTooltip === `${paraIndex}-${i}` ? null : `${paraIndex}-${i}`)}
+                                  className="border-b-2 border-[var(--color-gold)]/40 hover:border-[var(--color-gold)] transition-colors cursor-help"
+                                >
+                                  {part.text}
+                                </button>
+                                {activeTooltip === `${paraIndex}-${i}` && (
+                                  <span className="absolute left-0 bottom-full mb-2 z-50 w-64 p-4 bg-[var(--color-text)] text-white text-sm rounded-lg shadow-xl">
+                                    <span className="block font-display text-lg mb-1">{part.word.word}</span>
+                                    <span className="block text-white/80 text-sm leading-relaxed">{part.word.definition}</span>
+                                    <span className="block mt-2 text-xs text-white/50">{part.word.level} Level</span>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); setActiveTooltip(null); }}
+                                      className="absolute top-2 right-2 p-1 hover:bg-white/10 rounded"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                      </svg>
+                                    </button>
+                                  </span>
+                                )}
+                              </span>
+                            ) : (
+                              <span key={i}>{part.text}</span>
+                            )
+                          )
+                        ) : (
+                          para
+                        )}
+                      </p>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Mobile author bio */}
