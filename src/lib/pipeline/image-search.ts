@@ -235,6 +235,50 @@ const TOPIC_IMAGES: Record<string, string[]> = {
   'education': ['photo-1503676260728-1c00da094a0b', 'photo-1509062522246-3755977927d7'],
   'student': ['photo-1523050854058-8df90110c9f1', 'photo-1427504494785-3a9ca7044f45'],
   'teacher': ['photo-1503676260728-1c00da094a0b', 'photo-1577896851231-70ef18881754'],
+
+  // Film & Entertainment
+  'film': ['photo-1478147427282-58a87a120781', 'photo-1489599849927-2ee91cede3ba'],
+  'movie': ['photo-1478147427282-58a87a120781', 'photo-1489599849927-2ee91cede3ba'],
+  'cinema': ['photo-1478147427282-58a87a120781', 'photo-1517604931442-7e0c8ed2963c'],
+  'hollywood': ['photo-1478147427282-58a87a120781', 'photo-1489599849927-2ee91cede3ba'],
+  'director': ['photo-1485846234645-a62644f84728', 'photo-1478147427282-58a87a120781'],
+  'actor': ['photo-1485846234645-a62644f84728', 'photo-1478147427282-58a87a120781'],
+  'actress': ['photo-1485846234645-a62644f84728', 'photo-1478147427282-58a87a120781'],
+  'oscar': ['photo-1478147427282-58a87a120781', 'photo-1485846234645-a62644f84728'],
+  'theatre': ['photo-1503095396549-807759245b35', 'photo-1478147427282-58a87a120781'],
+  'theater': ['photo-1503095396549-807759245b35', 'photo-1478147427282-58a87a120781'],
+  'documentary': ['photo-1478147427282-58a87a120781', 'photo-1489599849927-2ee91cede3ba'],
+  'palestinian': ['photo-1552799446-159ba9523315', 'photo-1501506069358-8f497c6b4c6e'],
+  'gaza': ['photo-1552799446-159ba9523315', 'photo-1501506069358-8f497c6b4c6e'],
+  'israel': ['photo-1552799446-159ba9523315', 'photo-1501506069358-8f497c6b4c6e'],
+
+  // Music
+  'music': ['photo-1511379938547-c1f69419868d', 'photo-1507838153414-b4b713384a76'],
+  'concert': ['photo-1493225457124-a3eb161ffa5f', 'photo-1514525253161-7a46d19cd819'],
+  'singer': ['photo-1493225457124-a3eb161ffa5f', 'photo-1510915228340-29c85a43dcfe'],
+  'band': ['photo-1493225457124-a3eb161ffa5f', 'photo-1514525253161-7a46d19cd819'],
+  'album': ['photo-1511379938547-c1f69419868d', 'photo-1487180144351-b8472da7d491'],
+
+  // Sports
+  'football': ['photo-1579952363873-27f3bade9f55', 'photo-1606925797300-0b35e9d1794e'],
+  'soccer': ['photo-1579952363873-27f3bade9f55', 'photo-1606925797300-0b35e9d1794e'],
+  'basketball': ['photo-1574629810360-7efbbe195018', 'photo-1546519638-68e109498ffc'],
+  'tennis': ['photo-1622163642998-1ea32b0bbc67', 'photo-1554068865-24cecd4e34b8'],
+  'boxing': ['photo-1549719386-74dfcbf7dbed', 'photo-1517438476312-10d79c077509'],
+  'athlete': ['photo-1461896836934-28e4bc8f7705', 'photo-1552674605-db6ffd4facb5'],
+  'championship': ['photo-1461896836934-28e4bc8f7705', 'photo-1579952363873-27f3bade9f55'],
+  'olympics': ['photo-1461896836934-28e4bc8f7705', 'photo-1552674605-db6ffd4facb5'],
+  'stadium': ['photo-1461896836934-28e4bc8f7705', 'photo-1522778119026-d647f0596c20'],
+  'joshua': ['photo-1549719386-74dfcbf7dbed', 'photo-1517438476312-10d79c077509'],
+  'driver': ['photo-1494976388531-d1058494cdd8', 'photo-1492144534655-ae79c964c9d7'],
+  'driving': ['photo-1494976388531-d1058494cdd8', 'photo-1449824913935-59a10b8d2000'],
+
+  // Art & Museums
+  'museum': ['photo-1514320291840-2e0a9bf2a9ae', 'photo-1566127444977-a4f74d8676ad'],
+  'art': ['photo-1460661419201-fd4cecdf8a8b', 'photo-1547826039-bfc35e0f1ea8'],
+  'painting': ['photo-1460661419201-fd4cecdf8a8b', 'photo-1547826039-bfc35e0f1ea8'],
+  'gallery': ['photo-1514320291840-2e0a9bf2a9ae', 'photo-1567696911980-2eed69a46042'],
+  'exhibition': ['photo-1514320291840-2e0a9bf2a9ae', 'photo-1566127444977-a4f74d8676ad'],
 };
 
 // Category fallbacks - diverse images not city skylines

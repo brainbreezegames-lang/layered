@@ -121,48 +121,33 @@ export async function generateLevelHeadlines(
   levelVersions: Record<Level, string>
 ): Promise<{ titles: Record<Level, string>; subtitles: Record<Level, string> }> {
   const prompt = `
-You are a New York Times headline editor adapting headlines for English language learners at different proficiency levels.
+You are a New York Times headline editor. Create SHORT, punchy newspaper headlines.
 
-ORIGINAL TITLE: ${originalTitle}
-ORIGINAL SUBTITLE: ${originalSubtitle || "(no subtitle)"}
+ORIGINAL: ${originalTitle}
 
-Create level-appropriate versions of this headline and subtitle. Follow New York Times editorial standards:
-- Headlines should be clear, compelling, and capture the essence of the story
-- Use strong verbs and concrete nouns
-- Avoid clichés and jargon
-- Each level should use vocabulary appropriate to that proficiency
+CRITICAL RULES - HEADLINES MUST BE SHORT:
+- Title: MAXIMUM 10 words (shorter is better)
+- Subtitle: MAXIMUM 15 words
+- Drop articles (a, the, an) when possible
+- Use active voice, strong verbs
+- Think newspaper front page, NOT article text
 
-A1 (Beginner):
-- Use only the 500 most common English words
-- Maximum 6-8 words for title
-- Simple present tense preferred
-- Very simple subtitle (8-12 words)
+EXAMPLES OF GOOD HEADLINES:
+✓ "Gaza Girl's Voice Featured in Film" (6 words)
+✓ "Documentary Uses Child's Final Call" (5 words)
+✓ "Film Captures Girl's Plea for Help" (6 words)
 
-A2 (Elementary):
-- Use the 1,000 most common words
-- Maximum 8-10 words for title
-- Present and simple past tense
-- Clear, simple subtitle (10-15 words)
+BAD - TOO LONG:
+✗ "A Palestinian director made a film based on a girl's pleas" (11 words - too long!)
+✗ Long detailed sentences explaining the whole story
 
-B1 (Intermediate):
-- Use 2,000 common words
-- 8-12 words for title
-- More sophisticated structure allowed
-- Engaging subtitle (12-18 words)
+A1: Title 5-6 words | Subtitle 8-10 words | Simple words only
+A2: Title 6-7 words | Subtitle 10-12 words | Common words
+B1: Title 6-8 words | Subtitle 12-14 words | Clear language
+B2: Title 7-9 words | Subtitle 13-15 words | Sophisticated
+C1: Title 7-10 words | Subtitle 13-15 words | Refined language
 
-B2 (Upper-Intermediate):
-- Use 3,500 common words
-- 8-14 words for title
-- Natural, varied structures
-- Compelling subtitle (15-20 words)
-
-C1 (Advanced):
-- Full vocabulary range
-- Can use original title or refine it
-- Sophisticated, NYT-quality subtitle
-- Preserve nuance and style
-
-Return ONLY a JSON object in this exact format (no markdown, no explanation):
+Return ONLY valid JSON (no markdown):
 {
   "A1": {"title": "...", "subtitle": "..."},
   "A2": {"title": "...", "subtitle": "..."},
@@ -171,7 +156,7 @@ Return ONLY a JSON object in this exact format (no markdown, no explanation):
   "C1": {"title": "...", "subtitle": "..."}
 }`;
 
-  const systemPrompt = `You are an expert headline editor who adapts titles for different reading levels while maintaining journalistic quality. You always return valid JSON.`;
+  const systemPrompt = `You create SHORT newspaper headlines. Never write long sentences. Always return valid JSON.`;
 
   const response = await generateWithAI(prompt, systemPrompt);
 
