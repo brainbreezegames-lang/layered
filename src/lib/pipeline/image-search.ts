@@ -320,22 +320,41 @@ const CATEGORY_FALLBACKS: Record<string, string[]> = {
   ],
 };
 
+// Simple hash function to get deterministic index from string
+function hashString(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return Math.abs(hash);
+}
+
 // Find best matching image based on title keywords
 export function findTopicImage(title: string, category: string): string {
   const lowerTitle = title.toLowerCase();
 
-  // Check each topic keyword
-  for (const [keyword, photoIds] of Object.entries(TOPIC_IMAGES)) {
+  // Sort keywords by length (descending) so more specific keywords match first
+  // e.g., "palestinian" before "film", "hollywood" before "film"
+  const sortedKeywords = Object.entries(TOPIC_IMAGES)
+    .sort(([a], [b]) => b.length - a.length);
+
+  // Check each topic keyword (most specific first)
+  for (const [keyword, photoIds] of sortedKeywords) {
     if (lowerTitle.includes(keyword)) {
-      // Pick a random photo from the array
-      const photoId = photoIds[Math.floor(Math.random() * photoIds.length)];
+      // Use hash of title to deterministically pick an image
+      // This ensures same article always gets same image, but different articles get different images
+      const index = hashString(title + keyword) % photoIds.length;
+      const photoId = photoIds[index];
       return `https://images.unsplash.com/${photoId}?w=800&q=80`;
     }
   }
 
   // Fall back to category default
   const fallbackIds = CATEGORY_FALLBACKS[category] || CATEGORY_FALLBACKS['world'];
-  const photoId = fallbackIds[Math.floor(Math.random() * fallbackIds.length)];
+  const index = hashString(title) % fallbackIds.length;
+  const photoId = fallbackIds[index];
   return `https://images.unsplash.com/${photoId}?w=800&q=80`;
 }
 
