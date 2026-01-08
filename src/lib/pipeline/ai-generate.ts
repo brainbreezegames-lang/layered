@@ -16,7 +16,7 @@ async function generateWithAI(prompt: string, systemPrompt: string = ""): Promis
       "X-Title": "Layered",
     },
     body: JSON.stringify({
-      model: "google/gemini-flash-1.5-8b-latest",
+      model: "anthropic/claude-3.5-sonnet",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: prompt },
@@ -26,7 +26,9 @@ async function generateWithAI(prompt: string, systemPrompt: string = ""): Promis
   });
 
   if (!response.ok) {
-    throw new Error(`OpenRouter API error: ${response.status}`);
+    const errorText = await response.text();
+    console.error('OpenRouter error:', response.status, errorText);
+    throw new Error(`OpenRouter API error: ${response.status} - ${errorText.slice(0, 200)}`);
   }
 
   const data = await response.json();
