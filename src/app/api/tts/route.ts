@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// Use Edge Runtime for better performance and compatibility
-export const runtime = "edge";
+// Use Node.js runtime for WebSocket support (Edge runtime doesn't support it well)
+export const runtime = "nodejs";
 export const maxDuration = 60;
 
 // Available voices - Microsoft Edge Neural TTS
@@ -29,42 +29,51 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Text is required" }, { status: 400 });
     }
 
-    // Limit text length
-    const truncatedText = text.slice(0, 5000);
+    // Limit text length for faster generation
+    const truncatedText = text.slice(0, 2000);
     const voiceName = VOICES[voice] || VOICES["en-US-female"];
     const rate = RATE_BY_LEVEL[level] || "+0%";
 
-    // Dynamic import for edge-tts-universal
-    const { UniversalEdgeTTS } = await import("edge-tts-universal");
+    // Use the Node.js EdgeTTS class
+    const { EdgeTTS } = await import("edge-tts-universal");
 
     // Create TTS instance with prosody options
-    const tts = new UniversalEdgeTTS(truncatedText, voiceName, {
+    const tts = new EdgeTTS(truncatedText, voiceName, {
       rate: rate,
       pitch: "+0Hz",
       volume: "+0%",
     });
 
-    // Generate audio
-    const result = await tts.synthesize();
+    // Generate audio with timeout protection
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 50000);
 
-    if (!result || !result.audio) {
-      throw new Error("No audio generated");
+    try {
+      const result = await tts.synthesize();
+      clearTimeout(timeoutId);
+
+      if (!result || !result.audio) {
+        throw new Error("No audio generated");
+      }
+
+      // Get audio as ArrayBuffer
+      const audioBuffer = await result.audio.arrayBuffer();
+
+      if (!audioBuffer || audioBuffer.byteLength === 0) {
+        throw new Error("Audio buffer is empty");
+      }
+
+      return new NextResponse(audioBuffer, {
+        headers: {
+          "Content-Type": "audio/mpeg",
+          "Content-Length": audioBuffer.byteLength.toString(),
+          "Cache-Control": "public, max-age=86400",
+        },
+      });
+    } catch (err) {
+      clearTimeout(timeoutId);
+      throw err;
     }
-
-    // Get audio as ArrayBuffer
-    const audioBuffer = await result.audio.arrayBuffer();
-
-    if (!audioBuffer || audioBuffer.byteLength === 0) {
-      throw new Error("Audio buffer is empty");
-    }
-
-    return new NextResponse(audioBuffer, {
-      headers: {
-        "Content-Type": "audio/mpeg",
-        "Content-Length": audioBuffer.byteLength.toString(),
-        "Cache-Control": "public, max-age=86400",
-      },
-    });
   } catch (error) {
     console.error("TTS Error:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
