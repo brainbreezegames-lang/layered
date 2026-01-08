@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { ArticleCard } from "@/components/ArticleCard";
-import { mockArticles } from "@/lib/data/mock-articles";
 import { Category } from "@/types";
 
 const categories: { id: Category | "all"; label: string }[] = [
@@ -42,7 +41,6 @@ export default function HomePage() {
   const [articles, setArticles] = useState<ArticlePreview[]>([]);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [useMock, setUseMock] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshStatus, setRefreshStatus] = useState<string | null>(null);
 
@@ -58,15 +56,10 @@ export default function HomePage() {
         if (!res.ok) throw new Error("Failed to fetch");
         const data: ApiResponse = await res.json();
 
-        if (data.articles.length === 0 && currentPage === 1) {
-          setUseMock(true);
-        } else {
-          setArticles(data.articles);
-          setTotalPages(data.pagination.totalPages);
-          setUseMock(false);
-        }
+        setArticles(data.articles);
+        setTotalPages(data.pagination.totalPages);
       } catch {
-        setUseMock(true);
+        setArticles([]);
       } finally {
         setLoading(false);
       }
@@ -75,19 +68,8 @@ export default function HomePage() {
     fetchArticles();
   }, [activeCategory, currentPage]);
 
-  // Mock data fallback
-  const mockFiltered =
-    activeCategory === "all"
-      ? mockArticles
-      : mockArticles.filter((a) => a.category === activeCategory);
-  const mockTotalPages = Math.ceil(mockFiltered.length / 6);
-  const mockPaginated = mockFiltered.slice(
-    (currentPage - 1) * 6,
-    currentPage * 6
-  );
-
-  const displayArticles = useMock ? mockPaginated : articles;
-  const displayTotalPages = useMock ? mockTotalPages : totalPages;
+  const displayArticles = articles;
+  const displayTotalPages = totalPages;
 
   const handleCategoryChange = (category: Category | "all") => {
     setActiveCategory(category);
@@ -128,12 +110,8 @@ export default function HomePage() {
     category: article.category as Category,
     heroImage: article.heroImage,
     heroAlt: article.heroAlt || article.title,
-    wordCount: "wordCounts" in article
-      ? (article.wordCounts as Record<string, number>)
-      : (article.wordCount as Record<string, number>),
-    readTime: "readTimes" in article
-      ? (article.readTimes as Record<string, number>)
-      : (article.readTime as Record<string, number>),
+    wordCount: article.wordCounts,
+    readTime: article.readTimes,
   }));
 
   return (
