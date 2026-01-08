@@ -41,15 +41,12 @@ export async function fetchNewsFromSource(source: typeof NEWS_SOURCES[number]): 
 }
 
 export async function fetchAllNews(): Promise<NewsItem[]> {
-  const allArticles: NewsItem[] = [];
+  // Fetch from all sources in parallel for speed
+  const results = await Promise.all(
+    NEWS_SOURCES.map((source) => fetchNewsFromSource(source))
+  );
 
-  for (const source of NEWS_SOURCES) {
-    const articles = await fetchNewsFromSource(source);
-    allArticles.push(...articles);
-    await new Promise((r) => setTimeout(r, 500)); // Rate limit
-  }
-
-  return allArticles;
+  return results.flat();
 }
 
 export async function getFullArticle(url: string): Promise<FullArticle | null> {

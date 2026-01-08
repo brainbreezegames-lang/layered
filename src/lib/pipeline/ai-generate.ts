@@ -96,15 +96,23 @@ REWRITTEN AT ${level} LEVEL:`;
 
 export async function generateAllLevels(originalText: string): Promise<Record<Level, string>> {
   const levels: Level[] = ["A1", "A2", "B1", "B2", "C1"];
-  const versions: Partial<Record<Level, string>> = {};
 
-  for (const level of levels) {
-    console.log(`Generating ${level} version...`);
-    versions[level] = await generateLevelVersion(originalText, level);
-    await new Promise((r) => setTimeout(r, 1000));
+  // Run all level generations in parallel for speed
+  console.log("Generating all level versions in parallel...");
+  const results = await Promise.all(
+    levels.map(async (level) => {
+      const text = await generateLevelVersion(originalText, level);
+      console.log(`✓ ${level} version done`);
+      return { level, text };
+    })
+  );
+
+  const versions: Record<Level, string> = {} as Record<Level, string>;
+  for (const { level, text } of results) {
+    versions[level] = text;
   }
 
-  return versions as Record<Level, string>;
+  return versions;
 }
 
 export async function generateExercises(articleText: string, level: Level): Promise<unknown> {
@@ -179,13 +187,20 @@ IMPORTANT: Return ONLY valid JSON, no other text. Make exercises appropriate for
 }
 
 export async function generateAllExercises(levelVersions: Record<Level, string>): Promise<Record<Level, unknown>> {
-  const exercises: Partial<Record<Level, unknown>> = {};
+  // Run all exercise generations in parallel for speed
+  console.log("Generating all exercises in parallel...");
+  const results = await Promise.all(
+    Object.entries(levelVersions).map(async ([level, text]) => {
+      const exercises = await generateExercises(text, level as Level);
+      console.log(`✓ ${level} exercises done`);
+      return { level: level as Level, exercises };
+    })
+  );
 
-  for (const [level, text] of Object.entries(levelVersions)) {
-    console.log(`Generating exercises for ${level}...`);
-    exercises[level as Level] = await generateExercises(text, level as Level);
-    await new Promise((r) => setTimeout(r, 2000));
+  const exercises: Record<Level, unknown> = {} as Record<Level, unknown>;
+  for (const { level, exercises: ex } of results) {
+    exercises[level] = ex;
   }
 
-  return exercises as Record<Level, unknown>;
+  return exercises;
 }
