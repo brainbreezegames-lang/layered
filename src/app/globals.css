@@ -1,24 +1,39 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
+  /* Editorial color palette - warm and restrained */
   --color-forest: #1B4332;
   --color-forest-light: #2D6A4F;
   --color-forest-dark: #081C15;
   --color-mint: #95D5B2;
   --color-mint-light: #D8F3DC;
-  --color-cream: #FFFEF9;
-  --color-warm: #F5F1EB;
-  --color-text: #1a1a1a;
-  --color-text-soft: #52524E;
-  --color-gold: #D4A574;
-  --color-coral: #E07A5F;
-  --radius-lg: 20px;
-  --radius-md: 12px;
-  --radius-sm: 8px;
+  --color-cream: #FAF8F3;
+  --color-cream-dark: #F0EDE6;
+  --color-warm: #EDE8E0;
+  --color-text: #1C1917;
+  --color-text-soft: #57534E;
+  --color-text-muted: #78716C;
+  --color-gold: #B8860B;
+  --color-terracotta: #C2703A;
+  --color-border: rgba(28, 25, 23, 0.08);
+  --color-border-strong: rgba(28, 25, 23, 0.15);
+
+  /* Editorial spacing */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2.5rem;
+  --space-2xl: 4rem;
+
+  /* Refined radii */
+  --radius-lg: 12px;
+  --radius-md: 8px;
+  --radius-sm: 4px;
 }
 
 html {
@@ -27,21 +42,46 @@ html {
 }
 
 body {
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Source Sans 3', -apple-system, BlinkMacSystemFont, sans-serif;
   background-color: var(--color-cream);
   color: var(--color-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  font-feature-settings: 'kern' 1, 'liga' 1;
 }
 
-/* Typography - Editorial Serif for headings */
+/* Editorial Typography */
 .font-display {
-  font-family: 'Fraunces', Georgia, serif;
+  font-family: 'Newsreader', Georgia, 'Times New Roman', serif;
+  font-optical-sizing: auto;
 }
 
 .font-body {
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Source Sans 3', -apple-system, sans-serif;
+}
+
+/* Editorial headline styles */
+.editorial-headline {
+  font-family: 'Newsreader', Georgia, serif;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.editorial-subhead {
+  font-family: 'Source Sans 3', sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+/* Editorial section divider */
+.editorial-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-border-strong) 20%, var(--color-border-strong) 80%, transparent);
 }
 
 /* Level Indicator Pills - Colorful and prominent */
