@@ -253,8 +253,8 @@ const C1_MINIMUM_WORDS = new Set([
 ]);
 
 /**
- * Filters vocabulary to only include words that are genuinely challenging
- * for the given user level
+ * Filters vocabulary to show words appropriate for the user's level
+ * Since vocabulary is now generated uniquely per level, we use simple filtering
  */
 export function filterVocabularyForLevel<T extends VocabInput>(
   vocabulary: T[],
@@ -268,44 +268,15 @@ export function filterVocabularyForLevel<T extends VocabInput>(
     const wordLevel = item.level;
     const wordLevelIndex = levels.indexOf(wordLevel);
 
-    // Rule 1: Never show words below the user's level
-    if (wordLevelIndex < userLevelIndex) {
+    // Show ONLY words exactly at the user's level
+    // (Since each level now has unique non-overlapping words)
+    if (wordLevelIndex !== userLevelIndex) {
       return false;
     }
 
-    // Rule 2: Never show extremely common words regardless of tagged level
+    // Filter out common words that shouldn't be taught
     if (COMMON_WORDS.has(word)) {
       return false;
-    }
-
-    // Rule 3: For B1+ users, also check if word should actually be at that level
-    if (userLevelIndex >= 2) {
-      // B1 or higher
-      // If word is tagged as A1/A2 but user is B1+, skip it
-      if (wordLevelIndex < 2) {
-        return false;
-      }
-    }
-
-    // Rule 4: For B2+ users, be even more strict
-    if (userLevelIndex >= 3) {
-      // B2 or higher
-      if (B1_MINIMUM_WORDS.has(word) && wordLevelIndex < 3) {
-        return false;
-      }
-    }
-
-    // Rule 5: For C1 users, only show genuinely advanced words
-    if (userLevelIndex >= 4) {
-      // C1
-      // Check if it's actually a C1-worthy word
-      if (!C1_MINIMUM_WORDS.has(word) && !B2_MINIMUM_WORDS.has(word)) {
-        // Word isn't in our advanced word lists - be suspicious
-        // Allow it only if it's explicitly tagged as C1
-        if (wordLevelIndex < 4) {
-          return false;
-        }
-      }
     }
 
     return true;

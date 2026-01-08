@@ -281,17 +281,18 @@ export function findTopicImage(title: string, category: string): string {
   const lowerTitle = title.toLowerCase();
 
   // Check each topic keyword
-  for (const [keyword, photoId] of Object.entries(TOPIC_IMAGES)) {
-    if (keyword.startsWith('_')) continue; // Skip category fallbacks
+  for (const [keyword, photoIds] of Object.entries(TOPIC_IMAGES)) {
     if (lowerTitle.includes(keyword)) {
+      // Pick a random photo from the array
+      const photoId = photoIds[Math.floor(Math.random() * photoIds.length)];
       return `https://images.unsplash.com/${photoId}?w=800&q=80`;
     }
   }
 
   // Fall back to category default
-  const fallbackKey = `_${category}`;
-  const fallbackId = TOPIC_IMAGES[fallbackKey] || TOPIC_IMAGES['_world'];
-  return `https://images.unsplash.com/${fallbackId}?w=800&q=80`;
+  const fallbackIds = CATEGORY_FALLBACKS[category] || CATEGORY_FALLBACKS['world'];
+  const photoId = fallbackIds[Math.floor(Math.random() * fallbackIds.length)];
+  return `https://images.unsplash.com/${photoId}?w=800&q=80`;
 }
 
 // Main function: try Unsplash API first, fall back to topic matching

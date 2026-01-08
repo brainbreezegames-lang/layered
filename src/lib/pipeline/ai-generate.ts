@@ -286,34 +286,40 @@ export interface VocabularyWord {
 }
 
 export async function generateVocabulary(levelVersions: Record<Level, string>): Promise<VocabularyWord[]> {
-  console.log("Generating vocabulary...");
+  console.log("Generating level-specific vocabulary...");
 
-  // Use the C1 version which has the richest vocabulary
-  const c1Text = levelVersions.C1;
-
-  const prompt = `You are an expert ESL vocabulary specialist. Extract 25 vocabulary words from this article that are genuinely worth teaching to language learners.
+  const prompt = `You are an expert ESL vocabulary specialist. Extract vocabulary words from this article that language learners should know.
 
 CRITICAL RULES:
-1. DO NOT include common everyday words that all English speakers know (e.g., "said", "police", "city", "day", "time", "people", "country", "government", "official")
-2. A1 words should be basic but useful verbs/nouns that beginners need (e.g., "arrest", "escape", "danger")
-3. A2 words should be slightly less common (e.g., "witness", "protest", "victim")
-4. B1 words should be intermediate vocabulary (e.g., "investigation", "conflict", "authorities")
-5. B2 words should be sophisticated (e.g., "allegations", "controversy", "jurisdiction")
-6. C1 words should be advanced/formal (e.g., "unprecedented", "deteriorating", "subsequently")
+1. NEVER include basic common words that everyone knows: "said", "police", "city", "day", "time", "people", "country", "government", "official", "make", "get", "go", "come", "want", "need", "like", "see", "know", "think", "say", "tell", "work", "live", "have", "be", "do"
+2. Each level must have DIFFERENT words - NO OVERLAP between levels
+3. Words must actually appear in the article text
 
-ARTICLE CONTENT:
-${c1Text}
+LEVEL DEFINITIONS:
+- A1 (Beginner): Basic verbs and nouns for survival English (e.g., "arrest", "escape", "neighbor", "bridge")
+- A2 (Elementary): Common but not obvious words (e.g., "witness", "protest", "victim", "investigate")
+- B1 (Intermediate): Academic/news vocabulary (e.g., "authorities", "conflict", "incident", "consequences")
+- B2 (Upper-Intermediate): Sophisticated expressions (e.g., "allegations", "controversy", "jurisdiction", "substantial")
+- C1 (Advanced): Formal/technical language (e.g., "unprecedented", "deteriorating", "subsequently", "implications", "contentious")
 
-Return ONLY a JSON array with exactly 25 words:
-- 3 A1 words (basic but not obvious)
-- 5 A2 words
-- 7 B1 words
-- 6 B2 words
-- 4 C1 words (sophisticated/formal)
+ARTICLE CONTENT FOR EACH LEVEL:
+A1: ${levelVersions.A1}
+A2: ${levelVersions.A2}
+B1: ${levelVersions.B1}
+B2: ${levelVersions.B2}
+C1: ${levelVersions.C1}
 
-Format: [{"word": "allegations", "definition": "claims that someone has done something wrong", "level": "B2"}]
+Extract UNIQUE words for each level with NO repeats:
+- 12 words ONLY for A1 users (from A1 text, basic words)
+- 12 words ONLY for A2 users (from A2 text, NOT in A1 list)
+- 12 words ONLY for B1 users (from B1 text, NOT in A1/A2 lists)
+- 12 words ONLY for B2 users (from B2 text, NOT in A1/A2/B1 lists)
+- 12 words ONLY for C1 users (from C1 text, NOT in any other list, formal/advanced only)
 
-Only include words that appear in the article. Each word must be genuinely challenging for its assigned level. Do NOT include common words like "police", "city", "people", "country", etc.`;
+Return ONLY a JSON array with exactly 60 words total (12 per level):
+[{"word": "allegations", "definition": "claims that someone did something wrong", "level": "B2"}]
+
+IMPORTANT: Each word must be unique to ONE level. No word should appear twice in different levels.`;
 
   const systemPrompt = `You are an ESL vocabulary specialist. Extract genuinely useful vocabulary for language learners. Always return valid JSON only.`;
 
@@ -335,7 +341,7 @@ Only include words that appear in the article. Each word must be genuinely chall
       }
     }
 
-    console.log(`✓ Generated ${vocabulary.length} vocabulary words`);
+    console.log(`✓ Generated ${vocabulary.length} vocabulary words (12 per level)`);
     return vocabulary;
   } catch (error) {
     console.error("Failed to generate vocabulary:", error);
