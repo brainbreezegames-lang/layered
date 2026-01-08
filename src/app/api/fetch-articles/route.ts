@@ -14,6 +14,16 @@ function generateSlug(title: string): string {
     .slice(0, 60);
 }
 
+function truncateSubtitle(text: string | undefined): string {
+  if (!text) return "";
+  // Clean up and truncate to ~120 chars, ending at word boundary
+  const cleaned = text.replace(/\s+/g, " ").trim();
+  if (cleaned.length <= 120) return cleaned;
+  const truncated = cleaned.slice(0, 120);
+  const lastSpace = truncated.lastIndexOf(" ");
+  return (lastSpace > 80 ? truncated.slice(0, lastSpace) : truncated) + "...";
+}
+
 export async function POST() {
   const results: { title: string; status: "success" | "error" | "skipped"; message?: string }[] = [];
 
@@ -91,7 +101,7 @@ export async function POST() {
           data: {
             slug: generateSlug(newsItem.title),
             title: newsItem.title,
-            subtitle: newsItem.description,
+            subtitle: truncateSubtitle(newsItem.description),
             category: newsItem.category,
             source: newsItem.source,
             sourceUrl: newsItem.link,
