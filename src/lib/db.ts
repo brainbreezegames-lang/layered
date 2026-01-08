@@ -4,8 +4,6 @@ type ArticleCreateInput = {
   slug: string;
   title: string;
   subtitle?: string | null;
-  titles?: Record<string, string> | null;
-  subtitles?: Record<string, string> | null;
   category: string;
   source: string;
   sourceUrl: string;
@@ -48,8 +46,6 @@ export const db = {
         slug: data.slug,
         title: data.title,
         subtitle: data.subtitle || null,
-        titles: data.titles || null,
-        subtitles: data.subtitles || null,
         category: data.category,
         source: data.source,
         sourceUrl: data.sourceUrl,
@@ -144,8 +140,6 @@ export const db = {
         vocabulary: Array<{ word: string; definition: string; level: string }>;
         heroImage: string;
         heroAlt: string;
-        titles: Record<string, string>;
-        subtitles: Record<string, string>;
         content: Record<string, string>;
       }>;
     }): Promise<ArticleRow> {

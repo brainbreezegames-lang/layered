@@ -15,8 +15,6 @@ export type ArticleRow = {
   slug: string;
   title: string;
   subtitle: string | null;
-  titles: Record<string, string> | null;
-  subtitles: Record<string, string> | null;
   category: string;
   source: string;
   sourceUrl: string;
