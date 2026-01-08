@@ -14,6 +14,8 @@ model Article {
 
   title       String
   subtitle    String?
+  titles      Json?    // { A1: "...", A2: "...", B1: "...", B2: "...", C1: "..." }
+  subtitles   Json?    // { A1: "...", A2: "...", B1: "...", B2: "...", C1: "..." }
   category    String
   source      String
   sourceUrl   String   @unique

@@ -115,6 +115,80 @@ export async function generateAllLevels(originalText: string): Promise<Record<Le
   return versions;
 }
 
+export async function generateLevelHeadlines(
+  originalTitle: string,
+  originalSubtitle: string,
+  levelVersions: Record<Level, string>
+): Promise<{ titles: Record<Level, string>; subtitles: Record<Level, string> }> {
+  const prompt = `
+You are a New York Times headline editor adapting headlines for English language learners at different proficiency levels.
+
+ORIGINAL TITLE: ${originalTitle}
+ORIGINAL SUBTITLE: ${originalSubtitle || "(no subtitle)"}
+
+Create level-appropriate versions of this headline and subtitle. Follow New York Times editorial standards:
+- Headlines should be clear, compelling, and capture the essence of the story
+- Use strong verbs and concrete nouns
+- Avoid clichés and jargon
+- Each level should use vocabulary appropriate to that proficiency
+
+A1 (Beginner):
+- Use only the 500 most common English words
+- Maximum 6-8 words for title
+- Simple present tense preferred
+- Very simple subtitle (8-12 words)
+
+A2 (Elementary):
+- Use the 1,000 most common words
+- Maximum 8-10 words for title
+- Present and simple past tense
+- Clear, simple subtitle (10-15 words)
+
+B1 (Intermediate):
+- Use 2,000 common words
+- 8-12 words for title
+- More sophisticated structure allowed
+- Engaging subtitle (12-18 words)
+
+B2 (Upper-Intermediate):
+- Use 3,500 common words
+- 8-14 words for title
+- Natural, varied structures
+- Compelling subtitle (15-20 words)
+
+C1 (Advanced):
+- Full vocabulary range
+- Can use original title or refine it
+- Sophisticated, NYT-quality subtitle
+- Preserve nuance and style
+
+Return ONLY a JSON object in this exact format (no markdown, no explanation):
+{
+  "A1": {"title": "...", "subtitle": "..."},
+  "A2": {"title": "...", "subtitle": "..."},
+  "B1": {"title": "...", "subtitle": "..."},
+  "B2": {"title": "...", "subtitle": "..."},
+  "C1": {"title": "...", "subtitle": "..."}
+}`;
+
+  const systemPrompt = `You are an expert headline editor who adapts titles for different reading levels while maintaining journalistic quality. You always return valid JSON.`;
+
+  const response = await generateWithAI(prompt, systemPrompt);
+
+  // Parse JSON response
+  const parsed = JSON.parse(response.trim());
+
+  const titles: Record<Level, string> = {} as Record<Level, string>;
+  const subtitles: Record<Level, string> = {} as Record<Level, string>;
+
+  for (const level of ["A1", "A2", "B1", "B2", "C1"] as Level[]) {
+    titles[level] = parsed[level].title;
+    subtitles[level] = parsed[level].subtitle;
+  }
+
+  return { titles, subtitles };
+}
+
 export async function generateExercises(articleText: string, level: Level): Promise<unknown> {
   const prompt = `
 Based on this ${level}-level English article, generate 6 types of exercises.
@@ -249,7 +323,9 @@ Only include words that appear in the article. Each word must be genuinely chall
     // Parse JSON from response
     let vocabulary: VocabularyWord[];
     try {
-      vocabulary = JSON.parse(response);
+      const parsed = JSON.parse(response);
+      // Handle both array and {words: [...]} formats
+      vocabulary = Array.isArray(parsed) ? parsed : (parsed.words || []);
     } catch {
       const jsonMatch = response.match(/\[[\s\S]*\]/);
       if (jsonMatch) {

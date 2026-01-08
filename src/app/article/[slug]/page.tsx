@@ -17,6 +17,8 @@ interface DbArticle {
   slug: string;
   title: string;
   subtitle: string | null;
+  titles?: Record<Level, string> | null;
+  subtitles?: Record<Level, string> | null;
   category: string;
   source: string;
   sourceUrl: string;
@@ -114,7 +116,13 @@ export default function ArticlePage({
     : displayArticle.readTime[level];
   const content = displayArticle.content[level];
   const exercises = displayArticle.exercises[level];
-  const vocabulary = displayArticle.vocabulary || [];
+  // Handle both array and {words: [...]} formats
+  const rawVocab = displayArticle.vocabulary || [];
+  const vocabulary = Array.isArray(rawVocab) ? rawVocab : (rawVocab as any).words || [];
+
+  // Use level-specific title and subtitle if available, otherwise fall back to original
+  const displayTitle = displayArticle.titles?.[level] || displayArticle.title;
+  const displaySubtitle = displayArticle.subtitles?.[level] || displayArticle.subtitle;
 
   return (
     <article className="min-h-screen bg-[var(--color-cream)] pb-24 md:pb-12">
@@ -159,11 +167,11 @@ export default function ArticlePage({
               {displayArticle.category}
             </p>
             <h1 className="editorial-headline text-2xl md:text-4xl lg:text-5xl text-white leading-tight">
-              {displayArticle.title}
+              {displayTitle}
             </h1>
-            {displayArticle.subtitle && (
+            {displaySubtitle && (
               <p className="mt-3 md:mt-4 text-white/80 text-base md:text-xl max-w-2xl leading-relaxed">
-                {displayArticle.subtitle}
+                {displaySubtitle}
               </p>
             )}
           </div>

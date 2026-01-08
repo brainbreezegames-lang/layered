@@ -19,21 +19,14 @@ async function backfillVocabulary() {
 
   try {
     // Get all articles
-    const allArticles = await db.article.findMany({
-      select: {
-        id: true,
-        slug: true,
-        content: true,
-        vocabulary: true,
-      },
-    });
+    const allArticles = await db.article.findMany();
 
-    // Filter to articles without vocabulary (null, undefined, or empty array)
-    const articles = allArticles.filter(a =>
-      !a.vocabulary || (Array.isArray(a.vocabulary) && a.vocabulary.length === 0)
-    ).slice(0, 5); // Process 5 at a time
+    // Filter to articles without vocabulary (null only)
+    // Don't re-process empty arrays since that means generation failed
+    const articlesWithoutVocab = allArticles.filter(a => a.vocabulary === null);
+    const articles = articlesWithoutVocab.slice(0, 5);
 
-    console.log(`Found ${articles.length} articles without vocabulary`);
+    console.log(`Found ${articlesWithoutVocab.length} articles without vocabulary, processing ${articles.length}`);
 
     if (articles.length === 0) {
       return NextResponse.json({
@@ -67,7 +60,8 @@ async function backfillVocabulary() {
     return NextResponse.json({
       success: true,
       processed,
-      remaining: articles.length - processed,
+      remaining: articlesWithoutVocab.length - processed,
+      total: allArticles.length,
     });
   } catch (error) {
     console.error("Backfill failed:", error);
