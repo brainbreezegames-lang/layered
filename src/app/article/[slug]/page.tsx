@@ -72,8 +72,8 @@ export default function ArticlePage({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-cream flex items-center justify-center">
-        <div className="animate-pulse text-muted">Loading article...</div>
+      <div className="min-h-screen bg-[var(--color-cream)] flex items-center justify-center">
+        <div className="animate-pulse text-[var(--color-text-muted)]">Loading article...</div>
       </div>
     );
   }
@@ -86,8 +86,8 @@ export default function ArticlePage({
 
   if (!displayArticle) {
     return (
-      <div className="min-h-screen bg-cream flex items-center justify-center">
-        <div className="text-muted">Article not found</div>
+      <div className="min-h-screen bg-[var(--color-cream)] flex items-center justify-center">
+        <div className="text-[var(--color-text-muted)]">Article not found</div>
       </div>
     );
   }
@@ -116,23 +116,23 @@ export default function ArticlePage({
   const vocabulary = displayArticle.vocabulary || [];
 
   return (
-    <article className="min-h-screen bg-cream pb-24 md:pb-12">
+    <article className="min-h-screen bg-[var(--color-cream)] pb-24 md:pb-12">
       {/* Back button - Mobile */}
-      <div className="md:hidden sticky top-14 z-30 bg-cream/95 backdrop-blur-sm border-b border-gray-100">
+      <div className="md:hidden sticky top-14 z-30 bg-[var(--color-cream)]/95 backdrop-blur-sm border-b border-[var(--color-border)]">
         <div className="px-4 py-3">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 text-sm text-muted hover:text-forest transition-colors"
+            className="inline-flex items-center gap-2 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-forest)] transition-colors"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
             </svg>
             Back to News
           </Link>
         </div>
       </div>
 
-      {/* Hero Image - Full width on mobile */}
+      {/* Hero Image - Full width with editorial overlay */}
       <div className="relative w-full aspect-[16/9] md:aspect-[21/9]">
         <Image
           src={displayArticle.heroImage || "/placeholder.jpg"}
@@ -143,16 +143,19 @@ export default function ArticlePage({
           sizes="100vw"
         />
         {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
 
         {/* Title overlay on image */}
         <div className="absolute bottom-0 left-0 right-0 p-4 md:p-8 lg:p-12">
-          <div className="max-w-4xl">
-            <h1 className="font-display text-2xl md:text-4xl lg:text-5xl font-medium text-white leading-tight">
+          <div className="max-w-4xl mx-auto">
+            <p className="editorial-subhead text-white/70 mb-2 md:mb-3">
+              {displayArticle.category}
+            </p>
+            <h1 className="editorial-headline text-2xl md:text-4xl lg:text-5xl text-white leading-tight">
               {displayArticle.title}
             </h1>
             {displayArticle.subtitle && (
-              <p className="mt-2 md:mt-3 text-white/80 text-sm md:text-lg max-w-2xl">
+              <p className="mt-3 md:mt-4 text-white/80 text-base md:text-xl max-w-2xl leading-relaxed">
                 {displayArticle.subtitle}
               </p>
             )}
@@ -161,7 +164,7 @@ export default function ArticlePage({
       </div>
 
       {/* Main content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         <div className="md:grid md:grid-cols-12 md:gap-8 lg:gap-12">
           {/* Sidebar - Horizontal on mobile, sticky on desktop */}
           <div className="md:col-span-4 lg:col-span-3 mb-6 md:mb-0">
