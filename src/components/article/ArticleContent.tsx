@@ -1,7 +1,9 @@
 "use client";
 
 import { VocabularyItem } from "@/types";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useEffect } from "react";
+import { TTSPlayer } from "@/components/audio/TTSPlayer";
+import { useLevel } from "@/components/LevelContext";
 
 interface ArticleContentProps {
   content: string;
@@ -10,7 +12,7 @@ interface ArticleContentProps {
 
 export function ArticleContent({ content, vocabulary }: ArticleContentProps) {
   const [activeWord, setActiveWord] = useState<VocabularyItem | null>(null);
-  const [isSpeaking, setIsSpeaking] = useState(false);
+  const { level } = useLevel();
 
   // Create a map of vocabulary words for quick lookup
   const vocabMap = new Map(vocabulary.map((v) => [v.word.toLowerCase(), v]));
@@ -35,30 +37,6 @@ export function ArticleContent({ content, vocabulary }: ArticleContentProps) {
       return () => document.removeEventListener("click", handleClickOutside);
     }
   }, [activeWord]);
-
-  const speakText = useCallback(() => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
-      alert("Text-to-speech is not supported in your browser.");
-      return;
-    }
-
-    if (isSpeaking) {
-      window.speechSynthesis.cancel();
-      setIsSpeaking(false);
-      return;
-    }
-
-    const utterance = new SpeechSynthesisUtterance(content);
-    utterance.rate = 0.9;
-    utterance.pitch = 1;
-    utterance.lang = "en-US";
-
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
-
-    setIsSpeaking(true);
-    window.speechSynthesis.speak(utterance);
-  }, [content, isSpeaking]);
 
   const handleWordClick = (vocabItem: VocabularyItem, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -100,6 +78,11 @@ export function ArticleContent({ content, vocabulary }: ArticleContentProps) {
         </p>
       )}
 
+      {/* Audio Player - Desktop (above content) */}
+      <div className="hidden md:block mb-8">
+        <TTSPlayer text={content} level={level} />
+      </div>
+
       {/* Article text */}
       <div className="font-body">
         {paragraphs.map((paragraph, index) => (
@@ -109,29 +92,9 @@ export function ArticleContent({ content, vocabulary }: ArticleContentProps) {
         ))}
       </div>
 
-      {/* Mobile Floating Actions */}
+      {/* Mobile Floating Actions - Using compact TTS player */}
       <div className="floating-actions no-print">
-        <button
-          onClick={speakText}
-          className={`action-btn ${isSpeaking ? "action-btn-secondary" : "action-btn-primary"}`}
-        >
-          {isSpeaking ? (
-            <>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <rect x="6" y="4" width="4" height="16" rx="1" />
-                <rect x="14" y="4" width="4" height="16" rx="1" />
-              </svg>
-              <span>Pause</span>
-            </>
-          ) : (
-            <>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-              </svg>
-              <span>Listen</span>
-            </>
-          )}
-        </button>
+        <TTSPlayer text={content} level={level} compact />
       </div>
 
       {/* Vocabulary Tooltip - Fixed position for mobile */}

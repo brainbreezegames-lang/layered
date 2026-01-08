@@ -11,6 +11,9 @@ export function Header() {
 
   const isNewsActive = pathname === "/" || pathname.startsWith("/article") || pathname.startsWith("/category");
   const isLearnActive = pathname.startsWith("/learn");
+  const isTravelActive = pathname.startsWith("/travel");
+  const isExploreActive = pathname.startsWith("/explore");
+  const isStoriesActive = pathname.startsWith("/stories");
 
   return (
     <header className="site-header">
@@ -41,6 +44,30 @@ export function Header() {
               }`}
             >
               Learn
+            </Link>
+            <Link
+              href="/travel"
+              className={`text-sm font-medium transition-colors ${
+                isTravelActive ? "text-forest" : "text-muted hover:text-forest"
+              }`}
+            >
+              Travel
+            </Link>
+            <Link
+              href="/explore"
+              className={`text-sm font-medium transition-colors ${
+                isExploreActive ? "text-forest" : "text-muted hover:text-forest"
+              }`}
+            >
+              Explore
+            </Link>
+            <Link
+              href="/stories"
+              className={`text-sm font-medium transition-colors ${
+                isStoriesActive ? "text-forest" : "text-muted hover:text-forest"
+              }`}
+            >
+              Stories
             </Link>
           </nav>
 
@@ -109,6 +136,33 @@ export function Header() {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Learn
+              </Link>
+              <Link
+                href="/travel"
+                className={`text-sm font-medium py-2 ${
+                  isTravelActive ? "text-forest" : "text-muted"
+                }`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Travel
+              </Link>
+              <Link
+                href="/explore"
+                className={`text-sm font-medium py-2 ${
+                  isExploreActive ? "text-forest" : "text-muted"
+                }`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Explore
+              </Link>
+              <Link
+                href="/stories"
+                className={`text-sm font-medium py-2 ${
+                  isStoriesActive ? "text-forest" : "text-muted"
+                }`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Stories
               </Link>
             </div>
           </nav>

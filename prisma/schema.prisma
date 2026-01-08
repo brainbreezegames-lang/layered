@@ -79,3 +79,129 @@ model Chapter {
   @@unique([bookId, slug])
   @@index([bookId])
 }
+
+model Story {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+
+  title       String
+  author      String
+  authorBio   String?
+  category    String   // mystery, love, humor, moral, adventure
+  themes      String[] // ["sacrifice", "irony", "love"]
+
+  source      String   // "Project Gutenberg" or "Standard Ebooks"
+  sourceUrl   String?
+
+  heroImage   String?
+
+  content     Json     // { A1: "...", A2: "...", B1: "...", B2: "...", C1: "..." }
+  exercises   Json     // { A1: {...}, A2: {...}, ... }
+  audio       Json?    // { A1: {url, duration}, ... }
+  vocabulary  Json?    // [{ word, definition, level }]
+  wordCounts  Json
+  readTimes   Json
+
+  publishedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+  @@index([author])
+}
+
+// ============================================
+// TRAVEL (Wikivoyage)
+// ============================================
+
+model Destination {
+  id          String               @id @default(cuid())
+  slug        String               @unique
+  wikiTitle   String               // Original Wikivoyage title
+
+  name        String               // "London", "Paris", etc.
+  country     String
+  region      String               // europe, asia, americas, africa, oceania
+  heroImage   String?
+  description String?
+
+  sections    DestinationSection[]
+
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@index([region])
+}
+
+model DestinationSection {
+  id            String      @id @default(cuid())
+  slug          String      // "getting-there", "where-to-eat"
+
+  destinationId String
+  destination   Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+
+  title         String      // "Getting There", "Where to Eat"
+  sectionType   String      // get-in, get-around, see, eat, sleep, tips
+  orderIndex    Int
+
+  content       Json        // { A1: "...", A2: "...", B1: "...", B2: "...", C1: "..." }
+  exercises     Json
+  audio         Json?
+  vocabulary    Json?
+  wordCounts    Json
+  readTimes     Json
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([destinationId, slug])
+  @@index([destinationId])
+}
+
+model TravelPhrase {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+
+  title       String   // "At the Airport", "At the Hotel"
+  category    String   // airport, hotel, restaurant, transport, emergency, shopping
+  icon        String?  // emoji or icon name
+
+  content     Json     // Phrases adapted per level
+  exercises   Json
+  audio       Json?
+  vocabulary  Json?
+  wordCounts  Json
+  readTimes   Json
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+}
+
+// ============================================
+// EXPLORE (Simple Wikipedia)
+// ============================================
+
+model ExploreArticle {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  wikiTitle   String   // Original Simple Wikipedia title
+
+  title       String
+  category    String   // people, places, science, history, culture
+  heroImage   String?
+  excerpt     String?  // Short description for cards
+
+  content     Json     // { A1: "...", A2: "...", B1: "...", B2: "...", C1: "..." }
+  exercises   Json
+  audio       Json?
+  vocabulary  Json?
+  wordCounts  Json
+  readTimes   Json
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+}
