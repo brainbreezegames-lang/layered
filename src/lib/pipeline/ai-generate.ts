@@ -16,7 +16,7 @@ async function generateWithAI(prompt: string, systemPrompt: string = ""): Promis
       "X-Title": "Layered",
     },
     body: JSON.stringify({
-      model: "anthropic/claude-3.5-sonnet",
+      model: "google/gemini-2.5-flash-lite-preview-09-2025",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: prompt },
@@ -37,62 +37,73 @@ async function generateWithAI(prompt: string, systemPrompt: string = ""): Promis
 
 const LEVEL_GUIDELINES: Record<Level, string> = {
   A1: `
-- Use only the 500 most common English words
+- Use ONLY the 500 most common English words
 - Maximum 8 words per sentence
-- Use only present tense
-- No idioms, phrasal verbs, or complex grammar
+- Use ONLY present tense (no past, no future, no perfect tenses)
+- No idioms, phrasal verbs, or slang
+- No passive voice
 - Simple subject-verb-object structure
-- Target: 150-200 words total`,
+- Repeat important words for reinforcement
+- Keep ALL the information from the original - do NOT remove facts
+- Target length: SAME as original (400-500 words) - make language simpler, NOT shorter`,
   A2: `
-- Use only the 1,000 most common English words
+- Use ONLY the 1,000 most common English words
 - Maximum 12 words per sentence
-- Use present and simple past tense
-- Avoid idioms and phrasal verbs
-- Simple sentence structures
-- Target: 250-350 words total`,
+- Use present tense and simple past tense
+- No idioms or phrasal verbs
+- Avoid passive voice when possible
+- Simple and compound sentences only
+- Keep ALL information from the original
+- Target length: SAME as original (400-500 words) - simpler language, not shorter`,
   B1: `
 - Use the 2,000 most common English words
 - Average 15 words per sentence
-- Use all common tenses
-- Some simple phrasal verbs allowed
-- Compound sentences allowed
-- Target: 400-500 words total`,
+- All common tenses allowed (present, past, future, present perfect)
+- Simple phrasal verbs allowed (look up, find out, etc.)
+- Compound and some complex sentences allowed
+- Keep ALL information from the original
+- Target length: SAME as original (400-600 words)`,
   B2: `
-- Use up to 3,500 common words
+- Use up to 4,000 common words
 - Natural sentence length variation
 - All tenses and aspects allowed
 - Idioms and phrasal verbs allowed
 - Complex sentences allowed
-- Target: 550-700 words total`,
+- Passive voice is fine
+- Keep ALL information and nuance from the original
+- Target length: SAME as original (500-700 words)`,
   C1: `
-- Preserve original vocabulary and complexity
-- Keep sophisticated sentence structures
+- Preserve sophisticated vocabulary
+- Keep complex sentence structures
 - Maintain idiomatic expressions
-- Keep nuanced meanings intact
-- Target: Original length (600-900 words)`,
+- Keep nuanced meanings
+- This should read like native-level journalism
+- Make minimal changes - only simplify truly obscure words or unclear constructions
+- Target length: SAME as original (500-800 words)`,
 };
 
 export async function generateLevelVersion(originalText: string, level: Level): Promise<string> {
   const prompt = `
-Rewrite this news article at ${level} English proficiency level.
+Adapt this article to ${level} level. Keep the SAME length and ALL information.
+Do NOT summarize. Do NOT shorten. Make the LANGUAGE simpler, not the content.
 
 RULES FOR ${level}:
 ${LEVEL_GUIDELINES[level]}
 
-IMPORTANT:
-- Keep ALL the key facts and information from the original
-- Make it sound natural, not like a textbook
-- Do not add information that isn't in the original
-- Do not include any preamble like "Here is the rewritten article"
-- Do NOT add a title or heading at the start - just the article body paragraphs
-- Just output the adapted article text directly
+CRITICAL:
+- The output MUST be approximately the same word count as the original
+- Keep ALL facts and information - do not remove anything
+- Make it sound natural, like real journalism
+- Do NOT include any preamble or explanations
+- Do NOT add a title or heading - just the article body paragraphs
+- Output ONLY the adapted article text
 
 ORIGINAL ARTICLE:
 ${originalText}
 
-REWRITTEN AT ${level} LEVEL:`;
+OUTPUT (${level} LEVEL):`;
 
-  const systemPrompt = `You are an expert ESL content writer who adapts news articles for English learners. You preserve factual accuracy while adjusting language complexity. Output only article body paragraphs without titles or headings.`;
+  const systemPrompt = `You are an expert at adapting English text for ${level} learners. The goal is to make text READABLE for that level, NOT SHORTER. All levels should be the same length - the difference is language complexity, not length.`;
 
   return await generateWithAI(prompt, systemPrompt);
 }
