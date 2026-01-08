@@ -82,6 +82,7 @@ IMPORTANT:
 - Make it sound natural, not like a textbook
 - Do not add information that isn't in the original
 - Do not include any preamble like "Here is the rewritten article"
+- Do NOT add a title or heading at the start - just the article body paragraphs
 - Just output the adapted article text directly
 
 ORIGINAL ARTICLE:
@@ -89,7 +90,7 @@ ${originalText}
 
 REWRITTEN AT ${level} LEVEL:`;
 
-  const systemPrompt = `You are an expert ESL content writer who adapts news articles for English learners. You preserve factual accuracy while adjusting language complexity.`;
+  const systemPrompt = `You are an expert ESL content writer who adapts news articles for English learners. You preserve factual accuracy while adjusting language complexity. Output only article body paragraphs without titles or headings.`;
 
   return await generateWithAI(prompt, systemPrompt);
 }
