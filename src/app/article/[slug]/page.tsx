@@ -108,14 +108,25 @@ export default function ArticlePage({
     readTime: "readTimes" in a ? a.readTimes : a.readTime,
   }));
 
-  const wordCount = "wordCounts" in displayArticle
-    ? displayArticle.wordCounts[level]
-    : displayArticle.wordCount[level];
-  const readTime = "readTimes" in displayArticle
-    ? displayArticle.readTimes[level]
-    : displayArticle.readTime[level];
-  const content = displayArticle.content[level];
-  const exercises = displayArticle.exercises[level];
+  // Check if article has been AI-processed (has A1 level content)
+  const isProcessed = displayArticle.content && "A1" in displayArticle.content;
+
+  const wordCountData = "wordCounts" in displayArticle ? displayArticle.wordCounts : (displayArticle as any).wordCount;
+  const readTimeData = "readTimes" in displayArticle ? displayArticle.readTimes : (displayArticle as any).readTime;
+
+  const wordCount = isProcessed
+    ? (wordCountData?.[level] || 0)
+    : ((wordCountData as any)?.raw || 0);
+  const readTime = isProcessed
+    ? (readTimeData?.[level] || 0)
+    : ((readTimeData as any)?.raw || 0);
+
+  // Use level content if processed, otherwise fall back to raw content
+  const content = isProcessed
+    ? displayArticle.content[level]
+    : (displayArticle.content as any)?.raw || "";
+
+  const exercises = isProcessed ? displayArticle.exercises?.[level] : null;
   // Handle both array and {words: [...]} formats
   const rawVocab = displayArticle.vocabulary || [];
   const vocabulary = Array.isArray(rawVocab) ? rawVocab : (rawVocab as any).words || [];
@@ -205,8 +216,33 @@ export default function ArticlePage({
               vocabulary={filterVocabularyForLevel(vocabulary, level)}
             />
 
-            {/* Exercises */}
-            <ExerciseSection exercises={exercises} />
+            {/* Show processing banner if not processed */}
+            {!isProcessed && (
+              <div className="mb-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl shadow-sm">
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-blue-600 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-blue-900">Adapting article to your level...</h3>
+                    <p className="text-blue-700 text-sm mt-1">
+                      Our AI is creating 5 difficulty levels and generating exercises. This usually takes 1-2 minutes.
+                    </p>
+                    <p className="text-blue-500 text-xs mt-2">
+                      You&apos;re viewing the original article text below.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Exercises - only show if article is processed */}
+            {exercises && <ExerciseSection exercises={exercises} />}
 
             {/* Related articles */}
             <RelatedArticles articles={transformedRelated} />
