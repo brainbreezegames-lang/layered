@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { MsEdgeTTS, OUTPUT_FORMAT } from "msedge-tts";
 
 // Microsoft Edge TTS voices - natural neural voices
 const VOICES = {
   "en-US-female": "en-US-JennyNeural",
   "en-US-male": "en-US-GuyNeural",
-  "en-US-female-2": "en-US-AriaNeural",
-  "en-US-male-2": "en-US-ChristopherNeural",
   "en-GB-female": "en-GB-SoniaNeural",
   "en-GB-male": "en-GB-RyanNeural",
   "en-AU-female": "en-AU-NatashaNeural",
@@ -24,6 +21,8 @@ const RATE_BY_LEVEL: Record<string, string> = {
   C1: "+10%",
 };
 
+export const maxDuration = 60; // Allow up to 60 seconds for audio generation
+
 export async function POST(request: NextRequest) {
   try {
     const { text, voice = "en-US-female", level = "B1" } = await request.json();
@@ -32,12 +31,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Text is required" }, { status: 400 });
     }
 
-    // Limit text length (5000 chars max for performance)
-    const truncatedText = text.slice(0, 5000);
+    // Limit text length (3000 chars max for performance on serverless)
+    const truncatedText = text.slice(0, 3000);
 
     // Get voice and rate settings
     const voiceName = VOICES[voice as VoiceKey] || VOICES["en-US-female"];
     const rate = RATE_BY_LEVEL[level] || "+0%";
+
+    // Dynamic import to avoid issues with module loading
+    const { MsEdgeTTS, OUTPUT_FORMAT } = await import("msedge-tts");
 
     // Create TTS instance
     const tts = new MsEdgeTTS();
@@ -46,13 +48,21 @@ export async function POST(request: NextRequest) {
     // Generate audio - returns { audioStream, metadataStream }
     const result = tts.toStream(truncatedText, { rate, pitch: "+0Hz", volume: "+0%" });
 
-    // Collect audio chunks from the audio stream
+    // Collect audio chunks from the audio stream with timeout
     const chunks: Buffer[] = [];
-    for await (const chunk of result.audioStream) {
-      chunks.push(Buffer.from(chunk));
-    }
 
-    const audioBuffer = Buffer.concat(chunks);
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error("Audio generation timed out")), 55000);
+    });
+
+    const audioPromise = (async () => {
+      for await (const chunk of result.audioStream) {
+        chunks.push(Buffer.from(chunk));
+      }
+      return Buffer.concat(chunks);
+    })();
+
+    const audioBuffer = await Promise.race([audioPromise, timeoutPromise]);
 
     return new NextResponse(audioBuffer, {
       headers: {
@@ -63,8 +73,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("TTS Error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(
-      { error: "Failed to generate audio", details: String(error) },
+      { error: "Failed to generate audio", details: errorMessage },
       { status: 500 }
     );
   }
