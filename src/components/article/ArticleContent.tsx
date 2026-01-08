@@ -78,8 +78,8 @@ export function ArticleContent({ content, vocabulary }: ArticleContentProps) {
         </p>
       )}
 
-      {/* Audio Player - Desktop (above content) */}
-      <div className="hidden md:block mb-8">
+      {/* Audio Player - Above content for all devices */}
+      <div className="mb-8">
         <TTSPlayer text={content} level={level} />
       </div>
 
@@ -90,11 +90,6 @@ export function ArticleContent({ content, vocabulary }: ArticleContentProps) {
             {highlightVocabulary(paragraph)}
           </p>
         ))}
-      </div>
-
-      {/* Mobile Floating Actions - Using compact TTS player */}
-      <div className="floating-actions no-print">
-        <TTSPlayer text={content} level={level} compact />
       </div>
 
       {/* Vocabulary Tooltip - Fixed position for mobile */}
