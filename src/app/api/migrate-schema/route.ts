@@ -1,18 +1,16 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { db } from "@/lib/db";
 
 async function runMigration() {
   console.log("Running schema migration...");
 
   // Add titles column if it doesn't exist
-  await prisma.$executeRawUnsafe(`
+  await db.$executeRawUnsafe(`
     ALTER TABLE "Article" ADD COLUMN IF NOT EXISTS "titles" JSONB;
   `);
 
   // Add subtitles column if it doesn't exist
-  await prisma.$executeRawUnsafe(`
+  await db.$executeRawUnsafe(`
     ALTER TABLE "Article" ADD COLUMN IF NOT EXISTS "subtitles" JSONB;
   `);
 
