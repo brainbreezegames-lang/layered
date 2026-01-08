@@ -8,31 +8,80 @@ interface TTSPlayerProps {
   className?: string;
 }
 
-// StreamElements voices (free, no auth required)
-const VOICES = [
-  { id: "Brian", label: "Brian", accent: "UK" },
-  { id: "Amy", label: "Amy", accent: "UK" },
-  { id: "Joey", label: "Joey", accent: "US" },
-  { id: "Joanna", label: "Joanna", accent: "US" },
+// Speed options based on CEFR level
+const SPEED_OPTIONS = [
+  { id: "slow", label: "0.8x", rate: 0.8 },
+  { id: "normal", label: "1x", rate: 1.0 },
+  { id: "fast", label: "1.2x", rate: 1.2 },
 ];
 
 export function TTSPlayer({ text, level = "B1", className = "" }: TTSPlayerProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [selectedVoice, setSelectedVoice] = useState("Brian");
+  const [speed, setSpeed] = useState("normal");
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [voicesLoaded, setVoicesLoaded] = useState(false);
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const startTimeRef = useRef<number>(0);
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Load voices
+  useEffect(() => {
+    const loadVoices = () => {
+      const voices = window.speechSynthesis.getVoices();
+      if (voices.length > 0) {
+        setVoicesLoaded(true);
+      }
+    };
+
+    loadVoices();
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+
+    return () => {
+      window.speechSynthesis.onvoiceschanged = null;
+    };
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
+      window.speechSynthesis.cancel();
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
       }
     };
+  }, []);
+
+  // Get the best available voice (prefer natural/enhanced voices)
+  const getBestVoice = useCallback(() => {
+    const voices = window.speechSynthesis.getVoices();
+
+    // Priority order for natural-sounding voices
+    const preferredVoices = [
+      // macOS premium voices
+      "Samantha (Enhanced)",
+      "Samantha",
+      "Daniel (Enhanced)",
+      "Daniel",
+      "Karen (Enhanced)",
+      "Karen",
+      // Chrome/Edge neural voices
+      "Microsoft Aria Online (Natural)",
+      "Microsoft Guy Online (Natural)",
+      "Google UK English Female",
+      "Google UK English Male",
+      "Google US English",
+    ];
+
+    for (const preferred of preferredVoices) {
+      const voice = voices.find(v => v.name.includes(preferred.split(" ")[0]) && v.lang.startsWith("en"));
+      if (voice) return voice;
+    }
+
+    // Fallback to any English voice
+    return voices.find(v => v.lang.startsWith("en")) || voices[0];
   }, []);
 
   const generateAndPlay = useCallback(async () => {
@@ -42,88 +91,109 @@ export function TTSPlayer({ text, level = "B1", className = "" }: TTSPlayerProps
     setError(null);
 
     try {
-      // Stop any existing audio
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
+      // Stop any existing speech
+      window.speechSynthesis.cancel();
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
       }
 
-      // Limit text length for API (StreamElements has limits)
-      const audioText = text.slice(0, 1000);
+      // Use first 5000 characters
+      const audioText = text.slice(0, 5000);
 
-      // StreamElements TTS API - free, no auth required
-      const apiUrl = `https://api.streamelements.com/kappa/v2/speech?voice=${selectedVoice}&text=${encodeURIComponent(audioText)}`;
+      const utterance = new SpeechSynthesisUtterance(audioText);
+      utteranceRef.current = utterance;
 
-      const audio = new Audio(apiUrl);
-      audioRef.current = audio;
+      // Set voice and rate
+      const voice = getBestVoice();
+      if (voice) utterance.voice = voice;
 
-      // Set up event listeners
-      audio.onloadedmetadata = () => {
-        setDuration(audio.duration);
+      const speedOption = SPEED_OPTIONS.find(s => s.id === speed);
+      utterance.rate = speedOption?.rate || 1.0;
+      utterance.pitch = 1.0;
+
+      // Estimate duration (rough: ~150 words per minute at normal speed)
+      const wordCount = audioText.split(/\s+/).length;
+      const estimatedDuration = (wordCount / 150) * 60 / (speedOption?.rate || 1);
+      setDuration(estimatedDuration);
+
+      // Event listeners
+      utterance.onstart = () => {
+        setIsLoading(false);
+        setIsPlaying(true);
+        startTimeRef.current = Date.now();
+
+        // Update progress
+        progressIntervalRef.current = setInterval(() => {
+          const elapsed = (Date.now() - startTimeRef.current) / 1000;
+          const prog = Math.min((elapsed / estimatedDuration) * 100, 99);
+          setProgress(prog);
+        }, 100);
       };
 
-      audio.ontimeupdate = () => {
-        if (audio.duration) {
-          setProgress((audio.currentTime / audio.duration) * 100);
+      utterance.onend = () => {
+        setIsPlaying(false);
+        setProgress(100);
+        if (progressIntervalRef.current) {
+          clearInterval(progressIntervalRef.current);
+        }
+        setTimeout(() => setProgress(0), 500);
+      };
+
+      utterance.onerror = (e) => {
+        if (e.error !== "canceled") {
+          setError("Speech synthesis failed. Please try again.");
+        }
+        setIsPlaying(false);
+        setIsLoading(false);
+        if (progressIntervalRef.current) {
+          clearInterval(progressIntervalRef.current);
         }
       };
 
-      audio.onended = () => {
-        setIsPlaying(false);
-        setProgress(0);
-      };
-
-      audio.onerror = () => {
-        setError("Audio playback failed. Please try again.");
-        setIsPlaying(false);
-        setIsLoading(false);
-      };
-
-      audio.oncanplaythrough = () => {
-        setIsLoading(false);
-      };
-
-      // Play
-      await audio.play();
-      setIsPlaying(true);
+      // Start speaking
+      window.speechSynthesis.speak(utterance);
     } catch (err) {
       console.error("TTS Error:", err);
       setError("Failed to generate audio. Please try again.");
       setIsLoading(false);
     }
-  }, [text, selectedVoice, isLoading]);
+  }, [text, speed, isLoading, getBestVoice]);
 
   const togglePlay = useCallback(() => {
-    if (!audioRef.current) {
-      generateAndPlay();
+    if (!utteranceRef.current || !isPlaying) {
+      if (window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
+        setIsPlaying(true);
+      } else {
+        generateAndPlay();
+      }
       return;
     }
 
     if (isPlaying) {
-      audioRef.current.pause();
+      window.speechSynthesis.pause();
       setIsPlaying(false);
-    } else {
-      audioRef.current.play();
-      setIsPlaying(true);
     }
   }, [isPlaying, generateAndPlay]);
 
   const stop = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-      audioRef.current = null;
+    window.speechSynthesis.cancel();
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
     }
+    utteranceRef.current = null;
     setIsPlaying(false);
     setProgress(0);
   }, []);
 
-  const handleVoiceChange = useCallback((voiceId: string) => {
-    setSelectedVoice(voiceId);
-    if (audioRef.current) {
+  const handleSpeedChange = useCallback((speedId: string) => {
+    setSpeed(speedId);
+    // If playing, restart with new speed
+    if (isPlaying) {
       stop();
+      setTimeout(() => generateAndPlay(), 100);
     }
-  }, [stop]);
+  }, [isPlaying, stop, generateAndPlay]);
 
   const formatTime = (seconds: number) => {
     if (!isFinite(seconds)) return "0:00";
@@ -132,7 +202,7 @@ export function TTSPlayer({ text, level = "B1", className = "" }: TTSPlayerProps
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const currentTime = audioRef.current?.currentTime || 0;
+  const currentTime = duration * (progress / 100);
 
   return (
     <div className={`bg-gradient-to-r from-forest to-forest-light rounded-2xl p-4 sm:p-5 text-white ${className}`}>
@@ -148,9 +218,9 @@ export function TTSPlayer({ text, level = "B1", className = "" }: TTSPlayerProps
         {/* Play/Pause Button */}
         <button
           onClick={togglePlay}
-          disabled={isLoading}
+          disabled={isLoading || !voicesLoaded}
           className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all flex-shrink-0 ${
-            isLoading
+            isLoading || !voicesLoaded
               ? "bg-white/20 cursor-wait"
               : "bg-white text-forest hover:bg-white/90 active:scale-95"
           }`}
@@ -189,7 +259,7 @@ export function TTSPlayer({ text, level = "B1", className = "" }: TTSPlayerProps
         </div>
 
         {/* Stop button */}
-        {(isPlaying || audioRef.current) && (
+        {isPlaying && (
           <button
             onClick={stop}
             className="w-10 h-10 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 transition-colors"
@@ -201,29 +271,28 @@ export function TTSPlayer({ text, level = "B1", className = "" }: TTSPlayerProps
         )}
       </div>
 
-      {/* Voice selector */}
+      {/* Speed selector */}
       <div className="flex items-center justify-center gap-1 sm:gap-2 mt-4 pt-3 border-t border-white/10">
-        {VOICES.map((voice) => (
+        <span className="text-xs text-white/50 mr-2">Speed:</span>
+        {SPEED_OPTIONS.map((opt) => (
           <button
-            key={voice.id}
-            onClick={() => handleVoiceChange(voice.id)}
+            key={opt.id}
+            onClick={() => handleSpeedChange(opt.id)}
             className={`px-2 sm:px-3 py-1.5 text-xs sm:text-sm rounded-lg transition-all ${
-              selectedVoice === voice.id
+              speed === opt.id
                 ? "bg-white text-forest font-medium"
                 : "bg-white/10 hover:bg-white/20"
             }`}
-            title={`${voice.label} (${voice.accent})`}
           >
-            <span className="hidden sm:inline">{voice.label}</span>
-            <span className="sm:hidden">{voice.accent}</span>
+            {opt.label}
           </button>
         ))}
       </div>
 
       {/* Loading indicator */}
-      {isLoading && (
-        <p className="text-center text-sm text-white/60 mt-3">
-          Generating audio...
+      {!voicesLoaded && (
+        <p className="text-center text-xs text-white/40 mt-3">
+          Loading speech engine...
         </p>
       )}
     </div>
