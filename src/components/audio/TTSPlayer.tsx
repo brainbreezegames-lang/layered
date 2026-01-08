@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import Image from "next/image";
 
 interface TTSPlayerProps {
   text: string;
@@ -8,31 +9,66 @@ interface TTSPlayerProps {
   className?: string;
 }
 
-// TikTok TTS voices (via Weilbyte's free API)
-const VOICES = [
-  { id: "en_us_001", label: "Female", accent: "US" },
-  { id: "en_us_006", label: "Male 1", accent: "US" },
-  { id: "en_us_007", label: "Male 2", accent: "US" },
-  { id: "en_us_009", label: "Male 3", accent: "US" },
-  { id: "en_us_010", label: "Male 4", accent: "US" },
-  { id: "en_uk_001", label: "Male", accent: "UK" },
-  { id: "en_au_001", label: "Female", accent: "AU" },
-  { id: "en_au_002", label: "Male", accent: "AU" },
+// Narrators with personalities
+const NARRATORS = [
+  {
+    id: "en_us_001",
+    name: "Emma Collins",
+    role: "US English",
+    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop&crop=face",
+  },
+  {
+    id: "en_us_006",
+    name: "James Mitchell",
+    role: "US English",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face",
+  },
+  {
+    id: "en_uk_001",
+    name: "Oliver Bennett",
+    role: "British English",
+    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop&crop=face",
+  },
+  {
+    id: "en_au_001",
+    name: "Sophie Taylor",
+    role: "Australian English",
+    avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&h=80&fit=crop&crop=face",
+  },
+  {
+    id: "en_us_009",
+    name: "Marcus Chen",
+    role: "US English",
+    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&h=80&fit=crop&crop=face",
+  },
+  {
+    id: "en_au_002",
+    name: "Liam Walker",
+    role: "Australian English",
+    avatar: "https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=80&h=80&fit=crop&crop=face",
+  },
 ];
 
-// API endpoint (our proxy to TikTok TTS)
+const SPEEDS = [
+  { value: 0.75, label: "0.75×" },
+  { value: 1, label: "1×" },
+  { value: 1.25, label: "1.25×" },
+  { value: 1.5, label: "1.5×" },
+];
+
 const TTS_API = "/api/tts";
 
 export function TTSPlayer({ text, level = "B1", className = "" }: TTSPlayerProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [selectedVoice, setSelectedVoice] = useState("en_us_001");
+  const [selectedNarrator, setSelectedNarrator] = useState(NARRATORS[0]);
+  const [speed, setSpeed] = useState(1);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (audioRef.current) {
@@ -49,85 +85,64 @@ export function TTSPlayer({ text, level = "B1", className = "" }: TTSPlayerProps
     setError(null);
 
     try {
-      // Stop any existing audio
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current = null;
       }
 
-      // TikTok TTS has a 300 character limit per request
-      // We'll use the first 300 characters for now
       const audioText = text.slice(0, 300);
 
-      // Call Weilbyte's TikTok TTS API
       const response = await fetch(TTS_API, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           text: audioText,
-          voice: selectedVoice,
+          voice: selectedNarrator.id,
         }),
       });
 
-      if (!response.ok) {
-        throw new Error("TTS API request failed");
-      }
+      if (!response.ok) throw new Error("TTS API request failed");
 
       const data = await response.json();
+      if (!data.data) throw new Error("No audio data received");
 
-      if (!data.data) {
-        throw new Error("No audio data received");
-      }
-
-      // Convert base64 to audio
       const audioBlob = await fetch(`data:audio/mp3;base64,${data.data}`).then(r => r.blob());
       const audioUrl = URL.createObjectURL(audioBlob);
 
       const audio = new Audio(audioUrl);
+      audio.playbackRate = speed;
       audioRef.current = audio;
 
-      // Set up event listeners
-      audio.onloadedmetadata = () => {
-        setDuration(audio.duration);
-      };
-
+      audio.onloadedmetadata = () => setDuration(audio.duration);
       audio.ontimeupdate = () => {
-        if (audio.duration) {
-          setProgress((audio.currentTime / audio.duration) * 100);
-        }
+        if (audio.duration) setProgress((audio.currentTime / audio.duration) * 100);
       };
-
       audio.onended = () => {
         setIsPlaying(false);
         setProgress(0);
         URL.revokeObjectURL(audioUrl);
       };
-
       audio.onerror = () => {
-        setError("Audio playback failed. Please try again.");
+        setError("Playback failed");
         setIsPlaying(false);
         setIsLoading(false);
       };
 
-      // Play
       await audio.play();
       setIsPlaying(true);
       setIsLoading(false);
     } catch (err) {
       console.error("TTS Error:", err);
-      setError("Failed to generate audio. Please try again.");
+      setError("Failed to generate audio");
       setIsLoading(false);
     }
-  }, [text, selectedVoice, isLoading]);
+  }, [text, selectedNarrator.id, speed, isLoading]);
 
   const togglePlay = useCallback(() => {
     if (!audioRef.current) {
       generateAndPlay();
       return;
     }
-
     if (isPlaying) {
       audioRef.current.pause();
       setIsPlaying(false);
@@ -147,12 +162,18 @@ export function TTSPlayer({ text, level = "B1", className = "" }: TTSPlayerProps
     setProgress(0);
   }, []);
 
-  const handleVoiceChange = useCallback((voiceId: string) => {
-    setSelectedVoice(voiceId);
-    if (audioRef.current) {
-      stop();
-    }
+  const handleNarratorChange = useCallback((narrator: typeof NARRATORS[0]) => {
+    setSelectedNarrator(narrator);
+    setIsExpanded(false);
+    if (audioRef.current) stop();
   }, [stop]);
+
+  const handleSpeedChange = useCallback((newSpeed: number) => {
+    setSpeed(newSpeed);
+    if (audioRef.current) {
+      audioRef.current.playbackRate = newSpeed;
+    }
+  }, []);
 
   const formatTime = (seconds: number) => {
     if (!isFinite(seconds)) return "0:00";
@@ -162,105 +183,178 @@ export function TTSPlayer({ text, level = "B1", className = "" }: TTSPlayerProps
   };
 
   const currentTime = audioRef.current?.currentTime || 0;
-  const currentVoice = VOICES.find(v => v.id === selectedVoice);
 
   return (
-    <div className={`bg-gradient-to-r from-forest to-forest-light rounded-2xl p-4 sm:p-5 text-white ${className}`}>
-      {/* Error message */}
-      {error && (
-        <div className="bg-red-500/20 text-red-100 text-sm mb-4 p-3 rounded-lg">
-          {error}
-        </div>
-      )}
+    <div className={`relative ${className}`}>
+      {/* Elegant editorial divider */}
+      <div className="flex items-center gap-4 mb-6">
+        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[var(--color-border-strong)] to-transparent" />
+        <span className="text-[10px] uppercase tracking-[0.2em] text-[var(--color-text-muted)] font-medium">
+          Listen
+        </span>
+        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[var(--color-border-strong)] to-transparent" />
+      </div>
 
-      {/* Main controls row */}
-      <div className="flex items-center gap-3 sm:gap-4">
-        {/* Play/Pause Button */}
+      {/* Main Player */}
+      <div className="flex items-start gap-4">
+        {/* Narrator Avatar */}
         <button
-          onClick={togglePlay}
-          disabled={isLoading}
-          className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all flex-shrink-0 ${
-            isLoading
-              ? "bg-white/20 cursor-wait"
-              : "bg-white text-forest hover:bg-white/90 active:scale-95"
-          }`}
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="relative flex-shrink-0 group"
         >
-          {isLoading ? (
-            <svg className="animate-spin w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
-          ) : isPlaying ? (
-            <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
-            </svg>
-          ) : (
-            <svg className="w-5 h-5 sm:w-6 sm:h-6 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M8 5v14l11-7z" />
-            </svg>
-          )}
-        </button>
-
-        {/* Progress section */}
-        <div className="flex-1 min-w-0">
-          {/* Progress bar */}
-          <div className="relative h-2 bg-white/20 rounded-full overflow-hidden">
-            <div
-              className="absolute inset-y-0 left-0 bg-white rounded-full transition-all duration-100"
-              style={{ width: `${progress}%` }}
+          <div className="w-12 h-12 rounded-full overflow-hidden ring-2 ring-[var(--color-border)] group-hover:ring-[var(--color-forest)] transition-all">
+            <Image
+              src={selectedNarrator.avatar}
+              alt={selectedNarrator.name}
+              width={48}
+              height={48}
+              className="object-cover"
             />
           </div>
+          <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-[var(--color-cream)] rounded-full flex items-center justify-center">
+            <svg className="w-2.5 h-2.5 text-[var(--color-text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </button>
 
-          {/* Time display */}
-          <div className="flex justify-between mt-1.5 text-xs text-white/70 font-mono">
-            <span>{formatTime(currentTime)}</span>
-            <span>{formatTime(duration)}</span>
+        {/* Controls & Info */}
+        <div className="flex-1 min-w-0">
+          {/* Narrator Info & Play Button */}
+          <div className="flex items-center gap-3 mb-2">
+            <button
+              onClick={togglePlay}
+              disabled={isLoading}
+              className="w-9 h-9 rounded-full flex items-center justify-center bg-[var(--color-forest)] text-white hover:bg-[var(--color-forest-light)] transition-colors disabled:opacity-50"
+            >
+              {isLoading ? (
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+              ) : isPlaying ? (
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              )}
+            </button>
+
+            <div className="min-w-0">
+              <p className="font-display text-sm text-[var(--color-text)] truncate">
+                {selectedNarrator.name}
+              </p>
+              <p className="text-[11px] text-[var(--color-text-muted)]">
+                {selectedNarrator.role}
+              </p>
+            </div>
+
+            {isPlaying && (
+              <button
+                onClick={stop}
+                className="ml-auto p-1.5 rounded-full hover:bg-[var(--color-cream-dark)] transition-colors"
+              >
+                <svg className="w-4 h-4 text-[var(--color-text-muted)]" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M6 6h12v12H6z" />
+                </svg>
+              </button>
+            )}
+          </div>
+
+          {/* Progress Bar */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-1 bg-[var(--color-warm)] rounded-full overflow-hidden">
+              <div
+                className="h-full bg-[var(--color-forest)] rounded-full transition-all duration-150"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <span className="text-[10px] text-[var(--color-text-muted)] tabular-nums w-12 text-right">
+              {formatTime(currentTime)} / {formatTime(duration)}
+            </span>
+          </div>
+
+          {/* Speed Controls */}
+          <div className="flex items-center gap-1 mt-2">
+            <span className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider mr-1">Speed</span>
+            {SPEEDS.map((s) => (
+              <button
+                key={s.value}
+                onClick={() => handleSpeedChange(s.value)}
+                className={`px-2 py-0.5 text-[10px] rounded transition-all ${
+                  speed === s.value
+                    ? "bg-[var(--color-text)] text-white"
+                    : "text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-cream-dark)]"
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
           </div>
         </div>
-
-        {/* Stop button */}
-        {isPlaying && (
-          <button
-            onClick={stop}
-            className="w-10 h-10 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 transition-colors"
-          >
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M6 6h12v12H6z" />
-            </svg>
-          </button>
-        )}
       </div>
 
-      {/* Voice selector */}
-      <div className="mt-4 pt-3 border-t border-white/10">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs text-white/50">Voice:</span>
-          <span className="text-xs text-white/70">{currentVoice?.label} ({currentVoice?.accent})</span>
-        </div>
-        <div className="flex flex-wrap gap-1 sm:gap-2 justify-center">
-          {VOICES.slice(0, 4).map((voice) => (
-            <button
-              key={voice.id}
-              onClick={() => handleVoiceChange(voice.id)}
-              className={`px-2 sm:px-3 py-1.5 text-xs rounded-lg transition-all ${
-                selectedVoice === voice.id
-                  ? "bg-white text-forest font-medium"
-                  : "bg-white/10 hover:bg-white/20"
-              }`}
-              title={`${voice.label} (${voice.accent})`}
-            >
-              {voice.accent} {voice.label.split(" ")[0]}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Loading indicator */}
-      {isLoading && (
-        <p className="text-center text-sm text-white/60 mt-3">
-          Generating audio...
-        </p>
+      {/* Error Message */}
+      {error && (
+        <p className="mt-2 text-xs text-red-600">{error}</p>
       )}
+
+      {/* Narrator Selection Dropdown */}
+      {isExpanded && (
+        <div className="absolute left-0 top-full mt-2 z-50 w-72 bg-white border border-[var(--color-border)] rounded-lg shadow-xl overflow-hidden">
+          <div className="p-3 border-b border-[var(--color-border)]">
+            <p className="text-[10px] uppercase tracking-wider text-[var(--color-text-muted)]">Choose Narrator</p>
+          </div>
+          <div className="max-h-64 overflow-y-auto">
+            {NARRATORS.map((narrator) => (
+              <button
+                key={narrator.id}
+                onClick={() => handleNarratorChange(narrator)}
+                className={`w-full flex items-center gap-3 p-3 hover:bg-[var(--color-cream)] transition-colors ${
+                  selectedNarrator.id === narrator.id ? "bg-[var(--color-cream)]" : ""
+                }`}
+              >
+                <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+                  <Image
+                    src={narrator.avatar}
+                    alt={narrator.name}
+                    width={40}
+                    height={40}
+                    className="object-cover"
+                  />
+                </div>
+                <div className="text-left min-w-0">
+                  <p className="font-display text-sm text-[var(--color-text)] truncate">
+                    {narrator.name}
+                  </p>
+                  <p className="text-[11px] text-[var(--color-text-muted)]">
+                    {narrator.role}
+                  </p>
+                </div>
+                {selectedNarrator.id === narrator.id && (
+                  <svg className="w-4 h-4 ml-auto text-[var(--color-forest)]" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                  </svg>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Click outside to close */}
+      {isExpanded && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setIsExpanded(false)}
+        />
+      )}
+
+      {/* Bottom divider */}
+      <div className="h-px bg-gradient-to-r from-transparent via-[var(--color-border)] to-transparent mt-6" />
     </div>
   );
 }

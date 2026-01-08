@@ -241,11 +241,6 @@ export default function StoryPage({ params }: { params: Promise<{ slug: string }
                 )}
               </div>
 
-              {/* Audio Player */}
-              <div className="hidden lg:block">
-                <TTSPlayer text={content} level={level} />
-              </div>
-
               {/* Author bio */}
               {story.authorBio && (
                 <div className="hidden lg:block p-5 bg-[var(--color-warm)] border border-[var(--color-border)] rounded-lg">
@@ -263,8 +258,8 @@ export default function StoryPage({ params }: { params: Promise<{ slug: string }
 
           {/* Content */}
           <div className="lg:col-span-9">
-            {/* Mobile Audio Player */}
-            <div className="lg:hidden mb-8">
+            {/* Audio Player - Inline with content */}
+            <div className="mb-8">
               <TTSPlayer text={content} level={level} />
             </div>
 
