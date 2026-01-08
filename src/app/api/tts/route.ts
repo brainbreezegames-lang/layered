@@ -29,8 +29,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Text is required" }, { status: 400 });
     }
 
-    // Limit text length for faster generation
-    const truncatedText = text.slice(0, 2000);
+    // Limit text length to stay under Vercel's 10s timeout (Hobby plan)
+    // ~500 chars generates in about 5-8 seconds
+    const truncatedText = text.slice(0, 500);
     const voiceName = VOICES[voice] || VOICES["en-US-female"];
     const rate = RATE_BY_LEVEL[level] || "+0%";
 

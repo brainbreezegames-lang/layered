@@ -33,11 +33,15 @@ export function TTSPlayer({ text, level = "B1", className = "" }: TTSPlayerProps
     setIsLoading(true);
     setError(null);
 
+    // Only send first paragraph or 500 chars (Vercel hobby timeout limit)
+    const firstParagraph = text.split('\n\n')[0] || text;
+    const audioText = firstParagraph.slice(0, 500);
+
     try {
       const response = await fetch("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, voice: selectedVoice, level }),
+        body: JSON.stringify({ text: audioText, voice: selectedVoice, level }),
       });
 
       if (!response.ok) {
