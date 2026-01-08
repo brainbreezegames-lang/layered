@@ -8,80 +8,38 @@ interface TTSPlayerProps {
   className?: string;
 }
 
-// Speed options based on CEFR level
-const SPEED_OPTIONS = [
-  { id: "slow", label: "0.8x", rate: 0.8 },
-  { id: "normal", label: "1x", rate: 1.0 },
-  { id: "fast", label: "1.2x", rate: 1.2 },
+// TikTok TTS voices (via Weilbyte's free API)
+const VOICES = [
+  { id: "en_us_001", label: "Female", accent: "US" },
+  { id: "en_us_006", label: "Male 1", accent: "US" },
+  { id: "en_us_007", label: "Male 2", accent: "US" },
+  { id: "en_us_009", label: "Male 3", accent: "US" },
+  { id: "en_us_010", label: "Male 4", accent: "US" },
+  { id: "en_uk_001", label: "Male", accent: "UK" },
+  { id: "en_au_001", label: "Female", accent: "AU" },
+  { id: "en_au_002", label: "Male", accent: "AU" },
 ];
+
+// API endpoint (Weilbyte's free TikTok TTS)
+const TTS_API = "https://tiktok-tts.weilnet.workers.dev/api/generation";
 
 export function TTSPlayer({ text, level = "B1", className = "" }: TTSPlayerProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [speed, setSpeed] = useState("normal");
+  const [selectedVoice, setSelectedVoice] = useState("en_us_001");
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [voicesLoaded, setVoicesLoaded] = useState(false);
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
-  const startTimeRef = useRef<number>(0);
-  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Load voices
-  useEffect(() => {
-    const loadVoices = () => {
-      const voices = window.speechSynthesis.getVoices();
-      if (voices.length > 0) {
-        setVoicesLoaded(true);
-      }
-    };
-
-    loadVoices();
-    window.speechSynthesis.onvoiceschanged = loadVoices;
-
-    return () => {
-      window.speechSynthesis.onvoiceschanged = null;
-    };
-  }, []);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      window.speechSynthesis.cancel();
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
       }
     };
-  }, []);
-
-  // Get the best available voice (prefer natural/enhanced voices)
-  const getBestVoice = useCallback(() => {
-    const voices = window.speechSynthesis.getVoices();
-
-    // Priority order for natural-sounding voices
-    const preferredVoices = [
-      // macOS premium voices
-      "Samantha (Enhanced)",
-      "Samantha",
-      "Daniel (Enhanced)",
-      "Daniel",
-      "Karen (Enhanced)",
-      "Karen",
-      // Chrome/Edge neural voices
-      "Microsoft Aria Online (Natural)",
-      "Microsoft Guy Online (Natural)",
-      "Google UK English Female",
-      "Google UK English Male",
-      "Google US English",
-    ];
-
-    for (const preferred of preferredVoices) {
-      const voice = voices.find(v => v.name.includes(preferred.split(" ")[0]) && v.lang.startsWith("en"));
-      if (voice) return voice;
-    }
-
-    // Fallback to any English voice
-    return voices.find(v => v.lang.startsWith("en")) || voices[0];
   }, []);
 
   const generateAndPlay = useCallback(async () => {
@@ -91,109 +49,110 @@ export function TTSPlayer({ text, level = "B1", className = "" }: TTSPlayerProps
     setError(null);
 
     try {
-      // Stop any existing speech
-      window.speechSynthesis.cancel();
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
+      // Stop any existing audio
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
       }
 
-      // Use first 5000 characters
-      const audioText = text.slice(0, 5000);
+      // TikTok TTS has a 300 character limit per request
+      // We'll use the first 300 characters for now
+      const audioText = text.slice(0, 300);
 
-      const utterance = new SpeechSynthesisUtterance(audioText);
-      utteranceRef.current = utterance;
+      // Call Weilbyte's TikTok TTS API
+      const response = await fetch(TTS_API, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text: audioText,
+          voice: selectedVoice,
+        }),
+      });
 
-      // Set voice and rate
-      const voice = getBestVoice();
-      if (voice) utterance.voice = voice;
+      if (!response.ok) {
+        throw new Error("TTS API request failed");
+      }
 
-      const speedOption = SPEED_OPTIONS.find(s => s.id === speed);
-      utterance.rate = speedOption?.rate || 1.0;
-      utterance.pitch = 1.0;
+      const data = await response.json();
 
-      // Estimate duration (rough: ~150 words per minute at normal speed)
-      const wordCount = audioText.split(/\s+/).length;
-      const estimatedDuration = (wordCount / 150) * 60 / (speedOption?.rate || 1);
-      setDuration(estimatedDuration);
+      if (!data.data) {
+        throw new Error("No audio data received");
+      }
 
-      // Event listeners
-      utterance.onstart = () => {
-        setIsLoading(false);
-        setIsPlaying(true);
-        startTimeRef.current = Date.now();
+      // Convert base64 to audio
+      const audioBlob = await fetch(`data:audio/mp3;base64,${data.data}`).then(r => r.blob());
+      const audioUrl = URL.createObjectURL(audioBlob);
 
-        // Update progress
-        progressIntervalRef.current = setInterval(() => {
-          const elapsed = (Date.now() - startTimeRef.current) / 1000;
-          const prog = Math.min((elapsed / estimatedDuration) * 100, 99);
-          setProgress(prog);
-        }, 100);
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+
+      // Set up event listeners
+      audio.onloadedmetadata = () => {
+        setDuration(audio.duration);
       };
 
-      utterance.onend = () => {
+      audio.ontimeupdate = () => {
+        if (audio.duration) {
+          setProgress((audio.currentTime / audio.duration) * 100);
+        }
+      };
+
+      audio.onended = () => {
         setIsPlaying(false);
-        setProgress(100);
-        if (progressIntervalRef.current) {
-          clearInterval(progressIntervalRef.current);
-        }
-        setTimeout(() => setProgress(0), 500);
+        setProgress(0);
+        URL.revokeObjectURL(audioUrl);
       };
 
-      utterance.onerror = (e) => {
-        if (e.error !== "canceled") {
-          setError("Speech synthesis failed. Please try again.");
-        }
+      audio.onerror = () => {
+        setError("Audio playback failed. Please try again.");
         setIsPlaying(false);
         setIsLoading(false);
-        if (progressIntervalRef.current) {
-          clearInterval(progressIntervalRef.current);
-        }
       };
 
-      // Start speaking
-      window.speechSynthesis.speak(utterance);
+      // Play
+      await audio.play();
+      setIsPlaying(true);
+      setIsLoading(false);
     } catch (err) {
       console.error("TTS Error:", err);
       setError("Failed to generate audio. Please try again.");
       setIsLoading(false);
     }
-  }, [text, speed, isLoading, getBestVoice]);
+  }, [text, selectedVoice, isLoading]);
 
   const togglePlay = useCallback(() => {
-    if (!utteranceRef.current || !isPlaying) {
-      if (window.speechSynthesis.paused) {
-        window.speechSynthesis.resume();
-        setIsPlaying(true);
-      } else {
-        generateAndPlay();
-      }
+    if (!audioRef.current) {
+      generateAndPlay();
       return;
     }
 
     if (isPlaying) {
-      window.speechSynthesis.pause();
+      audioRef.current.pause();
       setIsPlaying(false);
+    } else {
+      audioRef.current.play();
+      setIsPlaying(true);
     }
   }, [isPlaying, generateAndPlay]);
 
   const stop = useCallback(() => {
-    window.speechSynthesis.cancel();
-    if (progressIntervalRef.current) {
-      clearInterval(progressIntervalRef.current);
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current = null;
     }
-    utteranceRef.current = null;
     setIsPlaying(false);
     setProgress(0);
   }, []);
 
-  const handleSpeedChange = useCallback((speedId: string) => {
-    setSpeed(speedId);
-    // If playing, restart with new speed
-    if (isPlaying) {
+  const handleVoiceChange = useCallback((voiceId: string) => {
+    setSelectedVoice(voiceId);
+    if (audioRef.current) {
       stop();
-      setTimeout(() => generateAndPlay(), 100);
     }
-  }, [isPlaying, stop, generateAndPlay]);
+  }, [stop]);
 
   const formatTime = (seconds: number) => {
     if (!isFinite(seconds)) return "0:00";
@@ -202,7 +161,8 @@ export function TTSPlayer({ text, level = "B1", className = "" }: TTSPlayerProps
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const currentTime = duration * (progress / 100);
+  const currentTime = audioRef.current?.currentTime || 0;
+  const currentVoice = VOICES.find(v => v.id === selectedVoice);
 
   return (
     <div className={`bg-gradient-to-r from-forest to-forest-light rounded-2xl p-4 sm:p-5 text-white ${className}`}>
@@ -218,9 +178,9 @@ export function TTSPlayer({ text, level = "B1", className = "" }: TTSPlayerProps
         {/* Play/Pause Button */}
         <button
           onClick={togglePlay}
-          disabled={isLoading || !voicesLoaded}
+          disabled={isLoading}
           className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all flex-shrink-0 ${
-            isLoading || !voicesLoaded
+            isLoading
               ? "bg-white/20 cursor-wait"
               : "bg-white text-forest hover:bg-white/90 active:scale-95"
           }`}
@@ -271,28 +231,34 @@ export function TTSPlayer({ text, level = "B1", className = "" }: TTSPlayerProps
         )}
       </div>
 
-      {/* Speed selector */}
-      <div className="flex items-center justify-center gap-1 sm:gap-2 mt-4 pt-3 border-t border-white/10">
-        <span className="text-xs text-white/50 mr-2">Speed:</span>
-        {SPEED_OPTIONS.map((opt) => (
-          <button
-            key={opt.id}
-            onClick={() => handleSpeedChange(opt.id)}
-            className={`px-2 sm:px-3 py-1.5 text-xs sm:text-sm rounded-lg transition-all ${
-              speed === opt.id
-                ? "bg-white text-forest font-medium"
-                : "bg-white/10 hover:bg-white/20"
-            }`}
-          >
-            {opt.label}
-          </button>
-        ))}
+      {/* Voice selector */}
+      <div className="mt-4 pt-3 border-t border-white/10">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs text-white/50">Voice:</span>
+          <span className="text-xs text-white/70">{currentVoice?.label} ({currentVoice?.accent})</span>
+        </div>
+        <div className="flex flex-wrap gap-1 sm:gap-2 justify-center">
+          {VOICES.slice(0, 4).map((voice) => (
+            <button
+              key={voice.id}
+              onClick={() => handleVoiceChange(voice.id)}
+              className={`px-2 sm:px-3 py-1.5 text-xs rounded-lg transition-all ${
+                selectedVoice === voice.id
+                  ? "bg-white text-forest font-medium"
+                  : "bg-white/10 hover:bg-white/20"
+              }`}
+              title={`${voice.label} (${voice.accent})`}
+            >
+              {voice.accent} {voice.label.split(" ")[0]}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Loading indicator */}
-      {!voicesLoaded && (
-        <p className="text-center text-xs text-white/40 mt-3">
-          Loading speech engine...
+      {isLoading && (
+        <p className="text-center text-sm text-white/60 mt-3">
+          Generating audio...
         </p>
       )}
     </div>
