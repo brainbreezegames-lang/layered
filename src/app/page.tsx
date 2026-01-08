@@ -43,6 +43,8 @@ export default function HomePage() {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [useMock, setUseMock] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshStatus, setRefreshStatus] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchArticles() {
@@ -92,6 +94,31 @@ export default function HomePage() {
     setCurrentPage(1);
   };
 
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    setRefreshStatus("Fetching new articles...");
+    try {
+      const res = await fetch("/api/refresh", { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        setRefreshStatus(`Added ${data.processed} new articles`);
+        // Re-fetch articles after refresh
+        setTimeout(() => {
+          setCurrentPage(1);
+          setActiveCategory("all");
+          window.location.reload();
+        }, 1500);
+      } else {
+        setRefreshStatus("Refresh failed");
+      }
+    } catch {
+      setRefreshStatus("Refresh failed");
+    } finally {
+      setRefreshing(false);
+      setTimeout(() => setRefreshStatus(null), 3000);
+    }
+  };
+
   // Transform API articles to match ArticleCard props
   const transformedArticles = displayArticles.map((article) => ({
     id: article.id,
@@ -114,13 +141,45 @@ export default function HomePage() {
       {/* Editorial Header */}
       <header className="border-b border-[var(--color-border)]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
-          <p className="editorial-subhead mb-3">Daily</p>
+          <div className="flex items-center justify-between mb-3">
+            <p className="editorial-subhead">Daily</p>
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="group flex items-center gap-2 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors disabled:opacity-50"
+              title="Fetch latest articles"
+            >
+              <svg
+                className={`w-4 h-4 ${refreshing ? "animate-spin" : "group-hover:rotate-180 transition-transform duration-500"}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+              <span className="hidden sm:inline">
+                {refreshing ? "Refreshing..." : "Refresh"}
+              </span>
+            </button>
+          </div>
           <h1 className="editorial-headline text-4xl md:text-5xl lg:text-6xl text-[var(--color-text)]">
             Today&apos;s News
           </h1>
-          <p className="mt-4 text-[var(--color-text-soft)] text-lg md:text-xl max-w-2xl leading-relaxed">
-            Practice English with real-world stories adapted to your level.
-          </p>
+          <div className="flex items-center gap-4 mt-4">
+            <p className="text-[var(--color-text-soft)] text-lg md:text-xl max-w-2xl leading-relaxed">
+              Practice English with real-world stories adapted to your level.
+            </p>
+          </div>
+          {refreshStatus && (
+            <p className="mt-3 text-sm text-[var(--color-forest)] animate-fade-in">
+              {refreshStatus}
+            </p>
+          )}
         </div>
       </header>
 
