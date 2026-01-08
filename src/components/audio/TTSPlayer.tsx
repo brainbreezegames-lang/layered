@@ -20,8 +20,8 @@ const VOICES = [
   { id: "en_au_002", label: "Male", accent: "AU" },
 ];
 
-// API endpoint (Weilbyte's free TikTok TTS)
-const TTS_API = "https://tiktok-tts.weilnet.workers.dev/api/generation";
+// API endpoint (our proxy to TikTok TTS)
+const TTS_API = "/api/tts";
 
 export function TTSPlayer({ text, level = "B1", className = "" }: TTSPlayerProps) {
   const [isLoading, setIsLoading] = useState(false);
