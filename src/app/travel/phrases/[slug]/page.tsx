@@ -3,6 +3,7 @@
 import { useState, useEffect, use, useCallback } from "react";
 import Link from "next/link";
 import { TTSPlayer } from "@/components/audio/TTSPlayer";
+import { useLevel } from "@/components/LevelContext";
 
 interface TravelPhrase {
   id: string;
@@ -34,16 +35,11 @@ export default function TravelPhrasePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = use(params);
+  const { level } = useLevel();
   const [phrase, setPhrase] = useState<TravelPhrase | null>(null);
   const [loading, setLoading] = useState(true);
-  const [level, setLevel] = useState("B1");
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("selectedLevel");
-    if (saved) setLevel(saved);
-  }, []);
 
   useEffect(() => {
     async function fetchPhrase() {
@@ -61,11 +57,10 @@ export default function TravelPhrasePage({
     fetchPhrase();
   }, [slug]);
 
-  const handleLevelChange = (newLevel: string) => {
-    setLevel(newLevel);
-    localStorage.setItem("selectedLevel", newLevel);
+  // Reset answers when level changes
+  useEffect(() => {
     setAnswers({});
-  };
+  }, [level]);
 
   const getVocabularyForLevel = useCallback(() => {
     if (!phrase?.vocabulary) return [];
@@ -169,30 +164,8 @@ export default function TravelPhrasePage({
           <div className="md:col-span-4 lg:col-span-3 mb-6 md:mb-0">
             <div className="md:sticky md:top-24 space-y-4">
               <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-                {/* Level selector */}
-                <div className="mb-4">
-                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
-                    Reading Level
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {levels.map((l) => (
-                      <button
-                        key={l}
-                        onClick={() => handleLevelChange(l)}
-                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                          level === l
-                            ? "bg-forest text-white"
-                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                        }`}
-                      >
-                        {l}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
                 {/* Stats */}
-                <div className="flex items-center gap-4 py-3 border-t border-gray-100">
+                <div className="flex items-center gap-4">
                   <div>
                     <p className="text-xs text-gray-500">Words</p>
                     <p className="font-medium text-forest">

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
+import { useLevel } from "@/components/LevelContext";
 
 interface Chapter {
   id: string;
@@ -22,16 +23,11 @@ const levels = ["A1", "A2", "B1", "B2", "C1"];
 
 export default function ChapterPage({ params }: { params: Promise<{ bookSlug: string; chapterSlug: string }> }) {
   const { bookSlug, chapterSlug } = use(params);
+  const { level } = useLevel();
   const [chapter, setChapter] = useState<Chapter | null>(null);
   const [loading, setLoading] = useState(true);
-  const [level, setLevel] = useState("B1");
   const [showExercises, setShowExercises] = useState(false);
   const [answers, setAnswers] = useState<Record<number, any>>({});
-
-  useEffect(() => {
-    const saved = localStorage.getItem("selectedLevel");
-    if (saved) setLevel(saved);
-  }, []);
 
   useEffect(() => {
     async function fetchChapter() {
@@ -49,11 +45,10 @@ export default function ChapterPage({ params }: { params: Promise<{ bookSlug: st
     fetchChapter();
   }, [bookSlug, chapterSlug]);
 
-  const handleLevelChange = (newLevel: string) => {
-    setLevel(newLevel);
-    localStorage.setItem("selectedLevel", newLevel);
+  // Reset answers when level changes
+  useEffect(() => {
     setAnswers({});
-  };
+  }, [level]);
 
   const speak = () => {
     if (!chapter) return;
@@ -89,26 +84,9 @@ export default function ChapterPage({ params }: { params: Promise<{ bookSlug: st
     <div className="min-h-screen bg-cream">
       <div className="sticky top-14 md:top-16 z-40 bg-white border-b border-gray-100">
         <div className="max-w-3xl mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <Link href={"/learn/" + bookSlug} className="text-muted hover:text-forest text-sm">
-              &larr; {chapter.book?.title}
-            </Link>
-            <div className="flex items-center gap-2">
-              {levels.map((l) => (
-                <button
-                  key={l}
-                  onClick={() => handleLevelChange(l)}
-                  className={"px-3 py-1 rounded-full text-xs font-medium transition-all " + (
-                    level === l
-                      ? "bg-forest text-white"
-                      : "bg-cream-warm text-muted hover:bg-gray-200"
-                  )}
-                >
-                  {l}
-                </button>
-              ))}
-            </div>
-          </div>
+          <Link href={"/learn/" + bookSlug} className="text-muted hover:text-forest text-sm">
+            &larr; {chapter.book?.title}
+          </Link>
         </div>
       </div>
 

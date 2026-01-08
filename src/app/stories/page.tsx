@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useLevel } from "@/components/LevelContext";
 
 interface Story {
   id: string;
@@ -26,15 +27,10 @@ const categories = [
 ];
 
 export default function StoriesPage() {
+  const { level } = useLevel();
   const [activeCategory, setActiveCategory] = useState("all");
   const [stories, setStories] = useState<Story[]>([]);
   const [loading, setLoading] = useState(true);
-  const [level, setLevel] = useState("B1");
-
-  useEffect(() => {
-    const saved = localStorage.getItem("selectedLevel");
-    if (saved) setLevel(saved);
-  }, []);
 
   useEffect(() => {
     async function fetchStories() {

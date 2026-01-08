@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useLevel } from "@/components/LevelContext";
 
 interface Section {
   id: string;
@@ -45,14 +46,9 @@ export default function DestinationPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = use(params);
+  const { level } = useLevel();
   const [destination, setDestination] = useState<Destination | null>(null);
   const [loading, setLoading] = useState(true);
-  const [level, setLevel] = useState("B1");
-
-  useEffect(() => {
-    const saved = localStorage.getItem("selectedLevel");
-    if (saved) setLevel(saved);
-  }, []);
 
   useEffect(() => {
     async function fetchDestination() {
@@ -69,11 +65,6 @@ export default function DestinationPage({
     }
     fetchDestination();
   }, [slug]);
-
-  const handleLevelChange = (newLevel: string) => {
-    setLevel(newLevel);
-    localStorage.setItem("selectedLevel", newLevel);
-  };
 
   if (loading) {
     return (
@@ -146,27 +137,6 @@ export default function DestinationPage({
             {destination.description}
           </p>
         )}
-
-        {/* Level Selector */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <p className="editorial-subhead mb-1">Reading Level</p>
-            <p className="text-sm text-[var(--color-text-muted)]">
-              Choose your preferred difficulty
-            </p>
-          </div>
-          <div className="level-selector">
-            {levels.map((l) => (
-              <button
-                key={l}
-                onClick={() => handleLevelChange(l)}
-                className={`level-btn ${level === l ? "active" : ""}`}
-              >
-                {l}
-              </button>
-            ))}
-          </div>
-        </div>
 
         {/* Sections */}
         <section>

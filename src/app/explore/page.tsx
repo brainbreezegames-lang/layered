@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useLevel } from "@/components/LevelContext";
 
 interface ExploreArticle {
   id: string;
@@ -25,15 +26,10 @@ const categories = [
 ];
 
 export default function ExplorePage() {
+  const { level } = useLevel();
   const [activeCategory, setActiveCategory] = useState("all");
   const [articles, setArticles] = useState<ExploreArticle[]>([]);
   const [loading, setLoading] = useState(true);
-  const [level, setLevel] = useState("B1");
-
-  useEffect(() => {
-    const saved = localStorage.getItem("selectedLevel");
-    if (saved) setLevel(saved);
-  }, []);
 
   useEffect(() => {
     async function fetchArticles() {

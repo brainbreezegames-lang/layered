@@ -660,3 +660,128 @@ a:focus-visible {
   background-color: #FFEBEE !important;
   border-color: #C62828 !important;
 }
+
+/* ===================================
+   Synced Text Reader - Word Highlighting
+   =================================== */
+
+.synced-text-reader {
+  font-family: 'Source Sans 3', -apple-system, sans-serif;
+  font-size: 1.125rem;
+  line-height: 1.8;
+  color: var(--color-text);
+}
+
+/* Active word - currently being spoken */
+.synced-word-active {
+  background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+  color: var(--color-text);
+  border-radius: 3px;
+  padding: 1px 2px;
+  margin: -1px -2px;
+  box-shadow: 0 2px 8px rgba(180, 134, 11, 0.2);
+  animation: wordPulse 0.3s ease-out;
+}
+
+/* Past words - already spoken */
+.synced-word-past {
+  color: var(--color-text-soft);
+}
+
+/* Upcoming words - not yet spoken */
+.synced-word-upcoming {
+  color: var(--color-text);
+}
+
+/* Pulse animation for active word */
+@keyframes wordPulse {
+  0% {
+    background-color: rgba(180, 134, 11, 0.4);
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Reading mode container */
+.reading-mode {
+  position: relative;
+}
+
+.reading-mode.active {
+  padding: 1rem;
+  background: white;
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+/* Karaoke-style sentence highlighting */
+.synced-sentence-active {
+  background: linear-gradient(to right, var(--color-mint-light) 0%, transparent 100%);
+  border-left: 3px solid var(--color-forest);
+  padding-left: 0.75rem;
+  margin-left: -0.75rem;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+/* Progress indicator line */
+.reading-progress-line {
+  position: absolute;
+  left: 0;
+  width: 3px;
+  background: var(--color-forest);
+  transition: top 0.15s ease-out, height 0.15s ease-out;
+  border-radius: 2px;
+}
+
+/* Follow along toggle button */
+.follow-along-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  background: var(--color-cream-dark);
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+}
+
+.follow-along-toggle:hover {
+  color: var(--color-text);
+  background: var(--color-warm);
+}
+
+.follow-along-toggle.active {
+  color: var(--color-forest);
+  background: var(--color-mint-light);
+}
+
+/* Smooth scroll behavior for synced reading */
+.synced-text-reader {
+  scroll-behavior: smooth;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+/* Custom scrollbar for reading area */
+.synced-text-reader::-webkit-scrollbar {
+  width: 6px;
+}
+
+.synced-text-reader::-webkit-scrollbar-track {
+  background: var(--color-cream-dark);
+  border-radius: 3px;
+}
+
+.synced-text-reader::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: 3px;
+}
+
+.synced-text-reader::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}

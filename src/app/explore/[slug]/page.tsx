@@ -4,6 +4,7 @@ import { useState, useEffect, use, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { TTSPlayer } from "@/components/audio/TTSPlayer";
+import { useLevel } from "@/components/LevelContext";
 
 interface ExploreArticle {
   id: string;
@@ -28,16 +29,11 @@ export default function ExploreArticlePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = use(params);
+  const { level } = useLevel();
   const [article, setArticle] = useState<ExploreArticle | null>(null);
   const [loading, setLoading] = useState(true);
-  const [level, setLevel] = useState("B1");
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("selectedLevel");
-    if (saved) setLevel(saved);
-  }, []);
 
   useEffect(() => {
     async function fetchArticle() {
@@ -55,11 +51,10 @@ export default function ExploreArticlePage({
     fetchArticle();
   }, [slug]);
 
-  const handleLevelChange = (newLevel: string) => {
-    setLevel(newLevel);
-    localStorage.setItem("selectedLevel", newLevel);
+  // Reset answers when level changes
+  useEffect(() => {
     setAnswers({});
-  };
+  }, [level]);
 
   const getVocabularyForLevel = useCallback(() => {
     if (!article?.vocabulary) return [];
@@ -214,22 +209,9 @@ export default function ExploreArticlePage({
           {/* Sidebar */}
           <aside className="lg:col-span-3 mb-8 lg:mb-0">
             <div className="lg:sticky lg:top-24 space-y-6">
-              {/* Level selector */}
+              {/* Article Info */}
               <div className="p-5 bg-white border border-[var(--color-border)] rounded-lg">
-                <p className="editorial-subhead mb-3">Reading Level</p>
-                <div className="level-selector w-full">
-                  {levels.map((l) => (
-                    <button
-                      key={l}
-                      onClick={() => handleLevelChange(l)}
-                      className={`level-btn flex-1 ${level === l ? "active" : ""}`}
-                    >
-                      {l}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="flex items-center gap-6 mt-4 pt-4 border-t border-[var(--color-border)]">
+                <div className="flex items-center gap-6">
                   <div>
                     <p className="text-xs text-[var(--color-text-muted)]">Words</p>
                     <p className="font-display text-lg text-[var(--color-text)]">

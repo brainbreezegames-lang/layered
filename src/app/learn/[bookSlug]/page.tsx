@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useLevel } from "@/components/LevelContext";
 
 interface Chapter {
   id: string;
@@ -25,14 +26,9 @@ interface Book {
 
 export default function BookPage({ params }: { params: Promise<{ bookSlug: string }> }) {
   const { bookSlug } = use(params);
+  const { level } = useLevel();
   const [book, setBook] = useState<Book | null>(null);
   const [loading, setLoading] = useState(true);
-  const [level, setLevel] = useState("B1");
-
-  useEffect(() => {
-    const saved = localStorage.getItem("selectedLevel");
-    if (saved) setLevel(saved);
-  }, []);
 
   useEffect(() => {
     async function fetchBook() {

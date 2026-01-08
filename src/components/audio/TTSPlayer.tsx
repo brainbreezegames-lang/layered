@@ -57,6 +57,55 @@ const SPEEDS = [
 ];
 
 const TTS_API = "/api/tts";
+const MAX_CHUNK_SIZE = 280; // Leave some buffer for the 300 char API limit
+
+// Split text into chunks at sentence boundaries
+function splitTextIntoChunks(text: string): string[] {
+  const chunks: string[] = [];
+  const sentences = text.split(/(?<=[.!?])\s+/);
+  let currentChunk = "";
+
+  for (const sentence of sentences) {
+    // If a single sentence is too long, split it further
+    if (sentence.length > MAX_CHUNK_SIZE) {
+      if (currentChunk) {
+        chunks.push(currentChunk.trim());
+        currentChunk = "";
+      }
+      // Split long sentence by commas or at word boundaries
+      const parts = sentence.split(/(?<=,)\s+|(?<=;)\s+/);
+      for (const part of parts) {
+        if (part.length > MAX_CHUNK_SIZE) {
+          // Last resort: split at word boundaries
+          const words = part.split(/\s+/);
+          let wordChunk = "";
+          for (const word of words) {
+            if ((wordChunk + " " + word).length > MAX_CHUNK_SIZE) {
+              if (wordChunk) chunks.push(wordChunk.trim());
+              wordChunk = word;
+            } else {
+              wordChunk = wordChunk ? wordChunk + " " + word : word;
+            }
+          }
+          if (wordChunk) chunks.push(wordChunk.trim());
+        } else if ((currentChunk + " " + part).length > MAX_CHUNK_SIZE) {
+          if (currentChunk) chunks.push(currentChunk.trim());
+          currentChunk = part;
+        } else {
+          currentChunk = currentChunk ? currentChunk + " " + part : part;
+        }
+      }
+    } else if ((currentChunk + " " + sentence).length > MAX_CHUNK_SIZE) {
+      if (currentChunk) chunks.push(currentChunk.trim());
+      currentChunk = sentence;
+    } else {
+      currentChunk = currentChunk ? currentChunk + " " + sentence : sentence;
+    }
+  }
+
+  if (currentChunk) chunks.push(currentChunk.trim());
+  return chunks.filter(c => c.length > 0);
+}
 
 export function TTSPlayer({ text, level = "B1", className = "" }: TTSPlayerProps) {
   const [isLoading, setIsLoading] = useState(false);
@@ -64,41 +113,38 @@ export function TTSPlayer({ text, level = "B1", className = "" }: TTSPlayerProps
   const [selectedNarrator, setSelectedNarrator] = useState(NARRATORS[0]);
   const [speed, setSpeed] = useState(1);
   const [progress, setProgress] = useState(0);
-  const [duration, setDuration] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [currentChunkIndex, setCurrentChunkIndex] = useState(0);
+  const [loadingText, setLoadingText] = useState("Loading...");
 
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const chunksRef = useRef<string[]>([]);
+  const totalChunksRef = useRef(0);
+  const isStoppedRef = useRef(false);
+  const audioUrlsRef = useRef<string[]>([]);
+
+  // Clean up on unmount
   useEffect(() => {
     return () => {
+      isStoppedRef.current = true;
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current = null;
       }
+      // Clean up all audio URLs
+      audioUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
+      audioUrlsRef.current = [];
     };
   }, []);
 
-  const generateAndPlay = useCallback(async () => {
-    if (!text || isLoading) return;
-
-    setIsLoading(true);
-    setError(null);
-
+  // Generate audio for a specific chunk
+  const generateChunkAudio = useCallback(async (chunkText: string, voice: string): Promise<string | null> => {
     try {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-
-      const audioText = text.slice(0, 300);
-
       const response = await fetch(TTS_API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: audioText,
-          voice: selectedNarrator.id,
-        }),
+        body: JSON.stringify({ text: chunkText, voice }),
       });
 
       if (!response.ok) throw new Error("TTS API request failed");
@@ -108,41 +154,112 @@ export function TTSPlayer({ text, level = "B1", className = "" }: TTSPlayerProps
 
       const audioBlob = await fetch(`data:audio/mp3;base64,${data.data}`).then(r => r.blob());
       const audioUrl = URL.createObjectURL(audioBlob);
+      audioUrlsRef.current.push(audioUrl);
+      return audioUrl;
+    } catch (err) {
+      console.error("Chunk audio generation error:", err);
+      return null;
+    }
+  }, []);
 
-      const audio = new Audio(audioUrl);
-      audio.playbackRate = speed;
-      audioRef.current = audio;
+  // Play a specific chunk
+  const playChunk = useCallback(async (chunkIndex: number) => {
+    if (isStoppedRef.current || chunkIndex >= chunksRef.current.length) {
+      setIsPlaying(false);
+      setIsLoading(false);
+      setProgress(100);
+      return;
+    }
 
-      audio.onloadedmetadata = () => setDuration(audio.duration);
-      audio.ontimeupdate = () => {
-        if (audio.duration) setProgress((audio.currentTime / audio.duration) * 100);
-      };
-      audio.onended = () => {
+    setCurrentChunkIndex(chunkIndex);
+    setLoadingText(`Loading part ${chunkIndex + 1} of ${totalChunksRef.current}...`);
+
+    const chunkText = chunksRef.current[chunkIndex];
+    const audioUrl = await generateChunkAudio(chunkText, selectedNarrator.id);
+
+    if (!audioUrl || isStoppedRef.current) {
+      if (!isStoppedRef.current) {
+        setError("Failed to generate audio");
         setIsPlaying(false);
-        setProgress(0);
-        URL.revokeObjectURL(audioUrl);
-      };
-      audio.onerror = () => {
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+
+    const audio = new Audio(audioUrl);
+    audio.playbackRate = speed;
+    audioRef.current = audio;
+
+    audio.ontimeupdate = () => {
+      if (audio.duration && totalChunksRef.current > 0) {
+        // Calculate overall progress
+        const chunkProgress = audio.currentTime / audio.duration;
+        const overallProgress = ((chunkIndex + chunkProgress) / totalChunksRef.current) * 100;
+        setProgress(overallProgress);
+      }
+    };
+
+    audio.onended = () => {
+      if (!isStoppedRef.current) {
+        // Play next chunk
+        playChunk(chunkIndex + 1);
+      }
+    };
+
+    audio.onerror = () => {
+      if (!isStoppedRef.current) {
         setError("Playback failed");
         setIsPlaying(false);
         setIsLoading(false);
-      };
+      }
+    };
 
+    try {
       await audio.play();
-      setIsPlaying(true);
       setIsLoading(false);
     } catch (err) {
-      console.error("TTS Error:", err);
-      setError("Failed to generate audio");
+      console.error("Play error:", err);
+      setError("Failed to play audio");
+      setIsPlaying(false);
       setIsLoading(false);
     }
-  }, [text, selectedNarrator.id, speed, isLoading]);
+  }, [generateChunkAudio, selectedNarrator.id, speed]);
+
+  // Start playing from the beginning
+  const startPlaying = useCallback(async () => {
+    if (!text || isLoading) return;
+
+    setIsLoading(true);
+    setError(null);
+    isStoppedRef.current = false;
+
+    // Clean up previous audio URLs
+    audioUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
+    audioUrlsRef.current = [];
+
+    // Split text into chunks
+    const chunks = splitTextIntoChunks(text);
+    chunksRef.current = chunks;
+    totalChunksRef.current = chunks.length;
+
+    setCurrentChunkIndex(0);
+    setProgress(0);
+    setIsPlaying(true);
+
+    // Start playing first chunk
+    await playChunk(0);
+  }, [text, isLoading, playChunk]);
 
   const togglePlay = useCallback(() => {
-    if (!audioRef.current) {
-      generateAndPlay();
+    if (!audioRef.current || !isPlaying) {
+      startPlaying();
       return;
     }
+
     if (isPlaying) {
       audioRef.current.pause();
       setIsPlaying(false);
@@ -150,22 +267,28 @@ export function TTSPlayer({ text, level = "B1", className = "" }: TTSPlayerProps
       audioRef.current.play();
       setIsPlaying(true);
     }
-  }, [isPlaying, generateAndPlay]);
+  }, [isPlaying, startPlaying]);
 
   const stop = useCallback(() => {
+    isStoppedRef.current = true;
     if (audioRef.current) {
       audioRef.current.pause();
-      audioRef.current.currentTime = 0;
       audioRef.current = null;
     }
+    // Clean up audio URLs
+    audioUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
+    audioUrlsRef.current = [];
+
     setIsPlaying(false);
+    setIsLoading(false);
     setProgress(0);
+    setCurrentChunkIndex(0);
   }, []);
 
   const handleNarratorChange = useCallback((narrator: typeof NARRATORS[0]) => {
     setSelectedNarrator(narrator);
     setIsExpanded(false);
-    if (audioRef.current) stop();
+    stop();
   }, [stop]);
 
   const handleSpeedChange = useCallback((newSpeed: number) => {
@@ -175,14 +298,16 @@ export function TTSPlayer({ text, level = "B1", className = "" }: TTSPlayerProps
     }
   }, []);
 
+  // Estimate total duration based on text length (rough estimate: ~150 words per minute)
+  const estimatedDuration = Math.ceil((text.split(/\s+/).length / 150) * 60);
+  const currentTime = (progress / 100) * estimatedDuration;
+
   const formatTime = (seconds: number) => {
     if (!isFinite(seconds)) return "0:00";
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
-
-  const currentTime = audioRef.current?.currentTime || 0;
 
   return (
     <div className={`relative ${className}`}>
@@ -248,11 +373,11 @@ export function TTSPlayer({ text, level = "B1", className = "" }: TTSPlayerProps
                 {selectedNarrator.name}
               </p>
               <p className="text-[11px] text-[var(--color-text-muted)]">
-                {selectedNarrator.role}
+                {isLoading ? loadingText : selectedNarrator.role}
               </p>
             </div>
 
-            {isPlaying && (
+            {(isPlaying || isLoading) && (
               <button
                 onClick={stop}
                 className="ml-auto p-1.5 rounded-full hover:bg-[var(--color-cream-dark)] transition-colors"
@@ -272,8 +397,8 @@ export function TTSPlayer({ text, level = "B1", className = "" }: TTSPlayerProps
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <span className="text-[10px] text-[var(--color-text-muted)] tabular-nums w-12 text-right">
-              {formatTime(currentTime)} / {formatTime(duration)}
+            <span className="text-[10px] text-[var(--color-text-muted)] tabular-nums w-16 text-right">
+              {formatTime(currentTime)} / {formatTime(estimatedDuration)}
             </span>
           </div>
 

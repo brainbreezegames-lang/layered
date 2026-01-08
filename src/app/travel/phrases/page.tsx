@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useLevel } from "@/components/LevelContext";
 
 interface TravelPhrase {
   id: string;
@@ -33,15 +34,10 @@ const categoryIcons: Record<string, string> = {
 };
 
 export default function TravelPhrasesPage() {
+  const { level } = useLevel();
   const [activeCategory, setActiveCategory] = useState("all");
   const [phrases, setPhrases] = useState<TravelPhrase[]>([]);
   const [loading, setLoading] = useState(true);
-  const [level, setLevel] = useState("B1");
-
-  useEffect(() => {
-    const saved = localStorage.getItem("selectedLevel");
-    if (saved) setLevel(saved);
-  }, []);
 
   useEffect(() => {
     async function fetchPhrases() {
