@@ -7,6 +7,8 @@ interface TTSPlayerProps {
   text: string;
   level?: string;
   className?: string;
+  onTimeUpdate?: (currentTime: number, duration: number) => void;
+  onPlayStateChange?: (isPlaying: boolean) => void;
 }
 
 // Narrators with personalities
@@ -107,7 +109,7 @@ function splitTextIntoChunks(text: string): string[] {
   return chunks.filter(c => c.length > 0);
 }
 
-export function TTSPlayer({ text, level = "B1", className = "" }: TTSPlayerProps) {
+export function TTSPlayer({ text, level = "B1", className = "", onTimeUpdate, onPlayStateChange }: TTSPlayerProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [selectedNarrator, setSelectedNarrator] = useState(NARRATORS[0]);
@@ -137,6 +139,22 @@ export function TTSPlayer({ text, level = "B1", className = "" }: TTSPlayerProps
       audioUrlsRef.current = [];
     };
   }, []);
+
+  // Notify parent of play state changes
+  useEffect(() => {
+    onPlayStateChange?.(isPlaying);
+  }, [isPlaying, onPlayStateChange]);
+
+  // Notify parent of time updates
+  useEffect(() => {
+    if (onTimeUpdate) {
+      const currentTime = (progress / 100) * estimatedDuration;
+      onTimeUpdate(currentTime, estimatedDuration);
+    }
+  }, [progress, onTimeUpdate]);
+
+  // Estimate total duration based on text length (rough estimate: ~150 words per minute)
+  const estimatedDuration = Math.ceil((text.split(/\s+/).length / 150) * 60);
 
   // Generate audio for a specific chunk
   const generateChunkAudio = useCallback(async (chunkText: string, voice: string): Promise<string | null> => {
@@ -298,8 +316,7 @@ export function TTSPlayer({ text, level = "B1", className = "" }: TTSPlayerProps
     }
   }, []);
 
-  // Estimate total duration based on text length (rough estimate: ~150 words per minute)
-  const estimatedDuration = Math.ceil((text.split(/\s+/).length / 150) * 60);
+  // Calculate current time for display
   const currentTime = (progress / 100) * estimatedDuration;
 
   const formatTime = (seconds: number) => {
