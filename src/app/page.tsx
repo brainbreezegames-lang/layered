@@ -121,29 +121,7 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
           <div className="flex items-center justify-between mb-3">
             <p className="editorial-subhead">Daily</p>
-            <button
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="group flex items-center gap-2 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors disabled:opacity-50"
-              title="Fetch latest articles"
-            >
-              <svg
-                className={`w-4 h-4 ${refreshing ? "animate-spin" : "group-hover:rotate-180 transition-transform duration-500"}`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
-              </svg>
-              <span className="hidden sm:inline">
-                {refreshing ? "Refreshing..." : "Refresh"}
-              </span>
-            </button>
+            {/* Refresh button removed - use /api/generate-one or cron for new articles */}
           </div>
           <h1 className="editorial-headline text-4xl md:text-5xl lg:text-6xl text-[var(--color-text)]">
             Today&apos;s News
@@ -153,11 +131,7 @@ export default function HomePage() {
               Practice English with real-world stories adapted to your level.
             </p>
           </div>
-          {refreshStatus && (
-            <p className="mt-3 text-sm text-[var(--color-forest)] animate-fade-in">
-              {refreshStatus}
-            </p>
-          )}
+          {/* Removed refresh status */}
         </div>
       </header>
 
