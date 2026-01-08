@@ -48,8 +48,6 @@ export const db = {
         slug: data.slug,
         title: data.title,
         subtitle: data.subtitle || null,
-        titles: data.titles || null,
-        subtitles: data.subtitles || null,
         category: data.category,
         source: data.source,
         sourceUrl: data.sourceUrl,
