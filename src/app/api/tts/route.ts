@@ -1,25 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 
+// Use Edge Runtime for better performance and compatibility
+export const runtime = "edge";
 export const maxDuration = 60;
 
-// Split text into chunks for Google TTS (max ~200 chars per request)
-function splitText(text: string, maxLength: number = 200): string[] {
-  const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
-  const chunks: string[] = [];
-  let current = "";
+// Available voices - Microsoft Edge Neural TTS
+const VOICES: Record<string, string> = {
+  "en-US-female": "en-US-JennyNeural",
+  "en-US-male": "en-US-GuyNeural",
+  "en-GB-female": "en-GB-SoniaNeural",
+  "en-GB-male": "en-GB-RyanNeural",
+};
 
-  for (const sentence of sentences) {
-    if ((current + sentence).length <= maxLength) {
-      current += sentence;
-    } else {
-      if (current) chunks.push(current.trim());
-      current = sentence;
-    }
-  }
-  if (current) chunks.push(current.trim());
-
-  return chunks;
-}
+// Rate adjustment based on CEFR level
+const RATE_BY_LEVEL: Record<string, string> = {
+  A1: "-20%",
+  A2: "-10%",
+  B1: "+0%",
+  B2: "+5%",
+  C1: "+10%",
+};
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,57 +30,38 @@ export async function POST(request: NextRequest) {
     }
 
     // Limit text length
-    const truncatedText = text.slice(0, 3000);
+    const truncatedText = text.slice(0, 5000);
+    const voiceName = VOICES[voice] || VOICES["en-US-female"];
+    const rate = RATE_BY_LEVEL[level] || "+0%";
 
-    // Split into chunks
-    const chunks = splitText(truncatedText);
+    // Dynamic import for edge-tts-universal
+    const { UniversalEdgeTTS } = await import("edge-tts-universal");
 
-    // Determine language code based on voice
-    const langCode = voice.startsWith("en-GB") ? "en-GB" :
-                     voice.startsWith("en-AU") ? "en-AU" : "en-US";
+    // Create TTS instance with prosody options
+    const tts = new UniversalEdgeTTS(truncatedText, voiceName, {
+      rate: rate,
+      pitch: "+0Hz",
+      volume: "+0%",
+    });
 
-    // Fetch audio for each chunk
-    const audioChunks: ArrayBuffer[] = [];
+    // Generate audio
+    const result = await tts.synthesize();
 
-    for (const chunk of chunks) {
-      const encodedText = encodeURIComponent(chunk);
-      const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${langCode}&client=tw-ob&q=${encodedText}`;
-
-      const response = await fetch(ttsUrl, {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-          "Referer": "https://translate.google.com/",
-        },
-      });
-
-      if (!response.ok) {
-        console.error(`TTS chunk failed: ${response.status}`);
-        continue;
-      }
-
-      const buffer = await response.arrayBuffer();
-      if (buffer.byteLength > 0) {
-        audioChunks.push(buffer);
-      }
-    }
-
-    if (audioChunks.length === 0) {
+    if (!result || !result.audio) {
       throw new Error("No audio generated");
     }
 
-    // Combine all audio chunks
-    const totalLength = audioChunks.reduce((acc, buf) => acc + buf.byteLength, 0);
-    const combined = new Uint8Array(totalLength);
-    let offset = 0;
-    for (const chunk of audioChunks) {
-      combined.set(new Uint8Array(chunk), offset);
-      offset += chunk.byteLength;
+    // Get audio as ArrayBuffer
+    const audioBuffer = await result.audio.arrayBuffer();
+
+    if (!audioBuffer || audioBuffer.byteLength === 0) {
+      throw new Error("Audio buffer is empty");
     }
 
-    return new NextResponse(combined, {
+    return new NextResponse(audioBuffer, {
       headers: {
         "Content-Type": "audio/mpeg",
-        "Content-Length": combined.length.toString(),
+        "Content-Length": audioBuffer.byteLength.toString(),
         "Cache-Control": "public, max-age=86400",
       },
     });
@@ -96,11 +77,12 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   return NextResponse.json({
-    voices: [
-      { id: "en-US-female", name: "US English", gender: "neutral", accent: "en-US" },
-      { id: "en-GB-female", name: "UK English", gender: "neutral", accent: "en-GB" },
-      { id: "en-AU-female", name: "AU English", gender: "neutral", accent: "en-AU" },
-    ],
-    levels: ["A1", "A2", "B1", "B2", "C1"],
+    voices: Object.entries(VOICES).map(([key, name]) => ({
+      id: key,
+      name: name,
+      gender: key.includes("female") ? "female" : "male",
+      accent: key.split("-").slice(0, 2).join("-"),
+    })),
+    levels: Object.keys(RATE_BY_LEVEL),
   });
 }

@@ -9,10 +9,10 @@ interface TTSPlayerProps {
 }
 
 const VOICES = [
-  { id: "en-US-female", label: "Jenny", accent: "US", gender: "F" },
-  { id: "en-US-male", label: "Guy", accent: "US", gender: "M" },
-  { id: "en-GB-female", label: "Sonia", accent: "UK", gender: "F" },
-  { id: "en-GB-male", label: "Ryan", accent: "UK", gender: "M" },
+  { id: "en-US-female", label: "Jenny", accent: "US" },
+  { id: "en-US-male", label: "Guy", accent: "US" },
+  { id: "en-GB-female", label: "Sonia", accent: "UK" },
+  { id: "en-GB-male", label: "Ryan", accent: "UK" },
 ];
 
 export function TTSPlayer({ text, level = "B1", className = "" }: TTSPlayerProps) {
