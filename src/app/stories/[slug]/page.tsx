@@ -278,6 +278,7 @@ export default function StoryPage({ params }: { params: Promise<{ slug: string }
                 level={level}
                 onTimeUpdate={handleTimeUpdate}
                 onPlayStateChange={handlePlayStateChange}
+                seekToTime={seekToTime}
               />
             </div>
 
@@ -299,7 +300,7 @@ export default function StoryPage({ params }: { params: Promise<{ slug: string }
                 </button>
                 {isPlaying && followAlong && (
                   <span className="text-xs text-[var(--color-text-muted)]">
-                    Words highlight as they&apos;re spoken
+                    Tap any word to jump there
                   </span>
                 )}
               </div>
@@ -307,13 +308,15 @@ export default function StoryPage({ params }: { params: Promise<{ slug: string }
 
             {/* Story text - Synced or Regular based on playback state */}
             <div className={`reading-mode ${isPlaying && followAlong ? "active" : ""}`}>
-              {isPlaying && followAlong && duration > 0 ? (
+              {duration > 0 ? (
                 <SyncedTextReader
                   content={content}
                   currentTime={currentTime}
                   duration={duration}
-                  isPlaying={isPlaying}
+                  isPlaying={isPlaying && followAlong}
                   className="prose prose-lg max-w-none mb-12 text-[var(--color-text)] leading-[1.85] text-lg md:text-xl"
+                  onWordClick={handleWordSeek}
+                  vocabWords={vocabWords}
                 />
               ) : (
                 <div className="prose prose-lg max-w-none mb-12">
