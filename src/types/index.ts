@@ -7,6 +7,8 @@ export interface Article {
   slug: string;
   title: string;
   subtitle: string;
+  titles?: Record<Level, string> | null;
+  subtitles?: Record<Level, string> | null;
   category: Category;
   tags: string[];
   source: string;
