@@ -358,14 +358,20 @@ export function findTopicImage(title: string, category: string): string {
   return `https://images.unsplash.com/${photoId}?w=800&q=80`;
 }
 
-// Main function: try Unsplash API first, fall back to topic matching
-export async function getArticleImage(title: string, category: string): Promise<string> {
-  // Try Unsplash API search first
+// Main function: use source image first, then Unsplash API, then topic matching
+export async function getArticleImage(title: string, category: string, sourceImage?: string): Promise<string> {
+  // 1. Use the original article's image if available (best relevance)
+  if (sourceImage && sourceImage.startsWith('http')) {
+    console.log(`Using source image: ${sourceImage.slice(0, 50)}...`);
+    return sourceImage;
+  }
+
+  // 2. Try Unsplash API search
   const apiImage = await searchRelevantImage(title);
   if (apiImage) {
     return apiImage;
   }
 
-  // Fall back to topic-based matching
+  // 3. Fall back to topic-based matching
   return findTopicImage(title, category);
 }

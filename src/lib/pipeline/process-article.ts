@@ -47,8 +47,8 @@ export async function processArticle(newsItem: NewsItem) {
     generateVocabulary(levelVersions),
   ]);
 
-  // Get relevant image by searching Unsplash API (falls back to topic matching)
-  const heroImage = await getArticleImage(newsItem.title, newsItem.category);
+  // Get relevant image - use source image if available, then Unsplash, then topic matching
+  const heroImage = await getArticleImage(newsItem.title, newsItem.category, fullArticle.image);
 
   // Calculate word counts and read times
   const wordCounts: Record<Level, number> = {} as Record<Level, number>;

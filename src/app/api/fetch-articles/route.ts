@@ -24,6 +24,37 @@ function truncateSubtitle(text: string | undefined): string {
   return (lastSpace > 80 ? truncated.slice(0, lastSpace) : truncated) + "...";
 }
 
+// Normalize title for comparison (remove punctuation, lowercase, remove common words)
+function normalizeTitle(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\b(the|a|an|in|on|at|to|for|of|and|or|is|are|was|were|has|have|had|says|said)\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Check if two titles are about the same story
+function isSimilarTitle(title1: string, title2: string): boolean {
+  const norm1 = normalizeTitle(title1);
+  const norm2 = normalizeTitle(title2);
+
+  // Check if one contains most of the other's key words
+  const words1 = new Set(norm1.split(' ').filter(w => w.length > 3));
+  const words2 = new Set(norm2.split(' ').filter(w => w.length > 3));
+
+  if (words1.size === 0 || words2.size === 0) return false;
+
+  let matches = 0;
+  for (const word of words1) {
+    if (words2.has(word)) matches++;
+  }
+
+  // If 60%+ of key words match, consider it similar
+  const similarity = matches / Math.min(words1.size, words2.size);
+  return similarity >= 0.6;
+}
+
 export async function POST() {
   const results: { title: string; status: "success" | "error" | "skipped"; message?: string }[] = [];
 
@@ -43,13 +74,28 @@ export async function POST() {
     }
 
     // 2. Get existing articles to avoid duplicates
-    const existingArticles = await db.article.findMany();
+    const existingArticles = await db.article.findMany({
+      select: { sourceUrl: true, title: true }
+    });
     const existingUrls = new Set(existingArticles.map((a) => a.sourceUrl));
+    const existingTitles = existingArticles.map((a) => a.title);
     console.log(`Database has ${existingArticles.length} existing articles`);
 
-    // 3. Filter to only new articles
-    const newArticles = allNews.filter((item) => !existingUrls.has(item.link));
-    console.log(`Found ${newArticles.length} new articles to fetch`);
+    // 3. Filter to only new articles (check URL and title similarity)
+    const newArticles = allNews.filter((item) => {
+      // Skip if URL already exists
+      if (existingUrls.has(item.link)) return false;
+
+      // Skip if title is too similar to existing article
+      for (const existingTitle of existingTitles) {
+        if (isSimilarTitle(item.title, existingTitle)) {
+          console.log(`Skipping duplicate: "${item.title}" similar to "${existingTitle}"`);
+          return false;
+        }
+      }
+      return true;
+    });
+    console.log(`Found ${newArticles.length} new unique articles to fetch`);
 
     if (newArticles.length === 0) {
       return NextResponse.json({
@@ -60,11 +106,32 @@ export async function POST() {
       });
     }
 
-    // 4. Fetch and save up to 6 articles (raw, no AI)
-    const toProcess = newArticles.slice(0, 6);
+    // 4. Select articles with category variety (pick from each category)
+    const byCategory: Record<string, typeof newArticles> = {};
+    for (const article of newArticles) {
+      if (!byCategory[article.category]) byCategory[article.category] = [];
+      byCategory[article.category].push(article);
+    }
+
+    // Take 1-2 from each category to get variety
+    const selected: typeof newArticles = [];
+    const categories = Object.keys(byCategory);
+    let round = 0;
+    while (selected.length < 6 && round < 3) {
+      for (const cat of categories) {
+        if (byCategory[cat][round] && selected.length < 6) {
+          selected.push(byCategory[cat][round]);
+        }
+      }
+      round++;
+    }
+
+    console.log(`Selected ${selected.length} articles with category variety`);
+
+    // 5. Fetch and save articles (raw, no AI)
     let successCount = 0;
 
-    for (const newsItem of toProcess) {
+    for (const newsItem of selected) {
       try {
         console.log(`\n📰 Fetching: ${newsItem.title}`);
 
@@ -88,8 +155,8 @@ export async function POST() {
           continue;
         }
 
-        // Get image
-        const heroImage = await getArticleImage(newsItem.title, newsItem.category);
+        // Get image - prefer source image if available
+        const heroImage = await getArticleImage(newsItem.title, newsItem.category, fullArticle.image);
 
         // Calculate word count for raw content
         const wordCount = fullArticle.textContent.split(/\s+/).length;
