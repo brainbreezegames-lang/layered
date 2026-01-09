@@ -23,6 +23,7 @@ export async function POST(request: NextRequest) {
         text: limitedText,
         voice: voice || "en_us_001",
       }),
+      redirect: "follow",
     });
 
     if (!response.ok) {
